@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>多重秒錶</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@300;500&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#1b1d22; --panel:#24262d; --line:#34373f;
+    --text:#e8e6e1; --muted:#8b8e97;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{background:var(--bg); color:var(--text); font-family:'Noto Sans TC',sans-serif;}
+  body{min-height:100vh; padding:16px 0 40px;}
+  header{max-width:1100px; margin:0 auto 14px; padding:0 16px;
+    display:flex; align-items:baseline; justify-content:space-between;}
+  header h1{font-size:1.05rem; font-weight:700; letter-spacing:.12em;}
+  header span{font-size:.75rem; color:var(--muted);}
+
+  /* ---------- 7x4 board ---------- */
+  .board-wrap{overflow-x:auto; padding:0 16px; -webkit-overflow-scrolling:touch;}
+  .board{
+    display:grid; gap:10px; margin:0 auto;
+    width:min(100%, 1100px, calc(100vh - 130px));
+    grid-template-columns:repeat(7, 1fr);
+  }
+  .cell{
+    aspect-ratio:1; border-radius:12px; container-type:size;
+    border:1.5px dashed #2e3138; position:relative;
+  }
+  .cell.over{border-color:#e8e6e1; border-style:solid; background:rgba(255,255,255,.06);}
+
+  /* ---------- card ---------- */
+  .card{
+    position:absolute; inset:0; border-radius:12px; overflow:hidden;
+    background:var(--panel); border:1px solid var(--line);
+    display:flex; flex-direction:column;
+    touch-action:auto; user-select:none; -webkit-user-select:none;
+  }
+  .card .bg{position:absolute; inset:0; background-size:cover; background-position:center;}
+  .card .tint{position:absolute; inset:0; background:linear-gradient(180deg,rgba(20,21,26,.35),rgba(20,21,26,.82));}
+  .card .stripe{position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--c); z-index:2;}
+  .card .body{position:relative; z-index:2; flex:1; display:flex; flex-direction:column;
+    padding:8px 8px 8px 12px; gap:4px;}
+  .card .top{display:flex; justify-content:space-between; align-items:center; gap:4px;}
+  .card .name{font-size:.72rem; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .card .menu-btn{background:none; border:none; color:var(--muted); font-size:1rem;
+    cursor:pointer; padding:0 4px; border-radius:5px; line-height:1;}
+  .card .menu-btn:hover,.card .menu-btn:focus-visible{color:var(--text); background:rgba(255,255,255,.1); outline:none;}
+  .time{
+    font-family:'Chivo Mono',monospace; font-weight:300; line-height:1;
+    font-size:clamp(8px, 17cqmin, 26px);
+    font-variant-numeric:tabular-nums; margin:auto 0;
+    opacity:.55;   /* 半透明,唔遮背景圖 */
+  }
+  .time small{font-size:.62em; color:var(--muted);}
+  .card.running .time{color:var(--c);}
+  .lastlap{font-family:'Chivo Mono',monospace; font-size:.6rem; color:var(--muted); white-space:nowrap; overflow:hidden;}
+  .controls{display:flex; gap:4px;}
+  .controls button{
+    flex:1; height:27px; border-radius:7px; border:1px solid var(--line);
+    background:rgba(255,255,255,.06); color:var(--text);
+    font-size:.72rem; cursor:pointer; font-family:inherit;
+  }
+  .controls button:disabled{opacity:.35; cursor:default;}
+  .controls button:hover:not(:disabled){background:rgba(255,255,255,.14);}
+  .controls .main{background:var(--c); border-color:transparent; color:var(--ctext); font-weight:700;}
+  .card.dragging{opacity:.25;}
+
+  /* 細格(手機直向)自動精簡 */
+  @container (max-width: 92px){
+    .lastlap{display:none;}
+    .name{font-size:.55rem;}
+    .menu-btn{font-size:.8rem; padding:0 2px;}
+    .body{padding:4px 4px 4px 8px; gap:2px;}
+    .controls{gap:3px;}
+    .controls button{height:19px; font-size:.6rem; border-radius:5px;}
+  }
+  .ghost{
+    position:fixed; z-index:999; pointer-events:none; border-radius:12px;
+    transform:scale(1.06); opacity:.92; box-shadow:0 14px 40px rgba(0,0,0,.6);
+  }
+
+  /* ---------- modals ---------- */
+  .overlay{position:fixed; inset:0; background:rgba(10,11,14,.72); z-index:100;
+    display:none; align-items:center; justify-content:center; padding:16px;}
+  .overlay.open{display:flex;}
+  .sheet{background:#212329; border:1px solid var(--line); border-radius:16px;
+    width:min(380px, 94vw); max-height:88vh; overflow-y:auto; padding:18px;
+    display:flex; flex-direction:column; gap:14px;}
+  .sheet h2{font-size:.95rem; letter-spacing:.06em;}
+  .sheet label{font-size:.72rem; color:var(--muted); letter-spacing:.08em; display:block; margin-bottom:6px;}
+  .sheet input[type=text]{width:100%; padding:9px 11px; border-radius:9px;
+    border:1px solid var(--line); background:var(--bg); color:var(--text); font-family:inherit; font-size:.9rem;}
+  .swatches{display:grid; grid-template-columns:repeat(7,1fr); gap:8px;}
+  .swatch{width:100%; aspect-ratio:1; border-radius:50%; border:2px solid rgba(255,255,255,.15); cursor:pointer;}
+  .swatch.sel{border-color:#fff; box-shadow:0 0 0 2px rgba(255,255,255,.3);}
+  .sheet .row{display:flex; gap:8px;}
+  .sheet .row button, .sheet > button{
+    flex:1; padding:10px 0; border-radius:9px; border:1px solid var(--line);
+    background:rgba(255,255,255,.05); color:var(--text); font-family:inherit; font-size:.82rem; cursor:pointer;}
+  .sheet .row button:hover{background:rgba(255,255,255,.12);}
+  .sheet .danger{color:#ff7b6b;}
+  .laps-list{font-family:'Chivo Mono',monospace; font-size:.78rem; color:var(--muted);
+    line-height:1.9; max-height:140px; overflow-y:auto;}
+
+  /* ---------- crop ---------- */
+  .crop-frame{
+    width:280px; height:280px; margin:0 auto; border-radius:12px;
+    overflow:hidden; position:relative; background:#000;
+    border:1px solid var(--line); touch-action:none; cursor:grab;
+  }
+  .crop-frame img{position:absolute; left:0; top:0; transform-origin:0 0; max-width:none; pointer-events:none;}
+  .crop-zoom{width:100%;}
+  .hint{font-size:.72rem; color:var(--muted); text-align:center;}
+
+  .add-btn{
+    position:fixed; bottom:22px; right:22px; z-index:50;
+    width:54px; height:54px; border-radius:50%; border:none;
+    background:var(--text); color:#15161a; font-family:inherit;
+    font-size:1.6rem; font-weight:400; line-height:1; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 6px 24px rgba(0,0,0,.5);
+  }
+  .add-btn:hover{transform:scale(1.07);}
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important; animation:none !important;} }
+</style>
+</head>
+<body>
+<header>
+  <h1>多重秒錶</h1>
+  <span id="clock"></span>
+</header>
+
+<div class="board-wrap"><div class="board" id="board"></div></div>
+
+<button class="add-btn" id="addBtn" aria-label="新增秒錶">＋</button>
+
+<!-- settings modal -->
+<div class="overlay" id="editOverlay">
+  <div class="sheet" id="editSheet"></div>
+</div>
+
+<!-- crop modal -->
+<div class="overlay" id="cropOverlay">
+  <div class="sheet">
+    <h2>剪裁圖片</h2>
+    <div class="crop-frame" id="cropFrame"><img id="cropImg" alt=""></div>
+    <div>
+      <label>縮放</label>
+      <input type="range" class="crop-zoom" id="cropZoom">
+    </div>
+    <div class="hint">拖曳圖片調整位置</div>
+    <div class="row">
+      <button id="cropCancel">取消</button>
+      <button id="cropOk" style="background:#e8e6e1;color:#15161a;font-weight:700;">確定</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================= colors: 7 rainbow + 7 light + 7 dark + white = 22 ================= */
+const COLORS = [
+  '#e53935','#fb8c00','#fdd835','#43a047','#1e88e5','#3949ab','#8e24aa', // 標準彩虹
+  '#ef9a9a','#ffcc80','#fff59d','#a5d6a7','#90caf9','#9fa8da','#ce93d8', // 淺
+  '#b71c1c','#e65100','#f9a825','#1b5e20','#0d47a1','#1a237e','#4a148c', // 深
+  '#ffffff'                                                              // 白
+];
+function textColorFor(hex){
+  const n = parseInt(hex.slice(1),16);
+  const r=(n>>16)&255, g=(n>>8)&255, b=n&255;
+  return (0.299*r+0.587*g+0.114*b)/255 > 0.6 ? '#15161a' : '#ffffff';
+}
+
+const COLS=7, ROWS=7, SLOTS=COLS*ROWS;
+const CARD_RATIO = 1; // w/h,正方形,同剪裁框一致
+
+/* ================= storage ================= */
+const store = {
+  ok: (()=>{ try{ localStorage.setItem('_t','1'); localStorage.removeItem('_t'); return true; }catch(e){ return false; } })(),
+  load(){ if(!this.ok) return null; try{ return JSON.parse(localStorage.getItem('multiStopwatch2')); }catch(e){ return null; } },
+  save(d){ if(!this.ok) return; try{ localStorage.setItem('multiStopwatch2', JSON.stringify(d)); }catch(e){ alert('儲存空間已滿,呢個改動可能未能保存(試下用細啲嘅圖片)。'); } }
+};
+
+let watches = store.load() || [
+  { id:Date.now(), name:'秒錶 1', color:COLORS[0], img:null, elapsed:0, running:false, startTs:0, laps:[], slot:0 }
+];
+watches.forEach((w,i)=>{ if(w.slot==null) w.slot=i; }); // 舊資料遷移
+function persist(){ store.save(watches); }
+
+/* ================= helpers ================= */
+const now = ()=>Date.now();
+const byId = id => watches.find(x=>x.id==id);
+const bySlot = s => watches.find(x=>x.slot===s);
+const displayMs = w => w.elapsed + (w.running ? now()-w.startTs : 0);
+const p = n => String(n).padStart(2,'0');
+function fmt(ms){
+  const h=Math.floor(ms/3600000);
+  if(h>0) return `${h}:${p(Math.floor(ms/60000)%60)}:${p(Math.floor(ms/1000)%60)}`;
+  return `${p(Math.floor(ms/60000)%60)}:${p(Math.floor(ms/1000)%60)}<small>.${p(Math.floor(ms/10)%100)}</small>`;
+}
+const fmtPlain = ms => `${p(Math.floor(ms/60000)%60)}:${p(Math.floor(ms/1000)%60)}.${p(Math.floor(ms/10)%100)}`;
+const esc = s => s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ================= render board ================= */
+const board = document.getElementById('board');
+function render(){
+  board.innerHTML = '';
+  for(let s=0; s<SLOTS; s++){
+    const cell = document.createElement('div');
+    cell.className = 'cell'; cell.dataset.slot = s;
+    const w = bySlot(s);
+    if(w) cell.appendChild(cardEl(w));
+    board.appendChild(cell);
+  }
+}
+function cardEl(w){
+  const el = document.createElement('div');
+  el.className = 'card' + (w.running?' running':'');
+  el.dataset.id = w.id;
+  el.style.setProperty('--c', w.color);
+  el.style.setProperty('--ctext', textColorFor(w.color));
+  el.innerHTML = `
+    ${w.img?`<div class="bg" style="background-image:url('${w.img}')"></div><div class="tint"></div>`:''}
+    <div class="stripe"></div>
+    <div class="body">
+      <div class="top">
+        <span class="name">${esc(w.name)}</span>
+        <button class="menu-btn" data-act="edit" aria-label="設定">⋯</button>
+      </div>
+      <div class="time">${fmt(displayMs(w))}</div>
+      ${w.laps.length?`<div class="lastlap">圈${w.laps.length} ${fmtPlain(w.laps[w.laps.length-1])}</div>`:''}
+      <div class="controls">
+        <button class="main" data-act="toggle">${w.running?'⏸':'▶'}</button>
+        <button data-act="lap" ${!w.running?'disabled':''} aria-label="計圈">⚑</button>
+        <button data-act="reset" aria-label="重設">↺</button>
+      </div>
+    </div>`;
+  return el;
+}
+
+/* ================= live tick ================= */
+function tick(){
+  document.querySelectorAll('.card.running').forEach(el=>{
+    const w = byId(el.dataset.id);
+    if(w){ const t=el.querySelector('.time'); if(t) t.innerHTML = fmt(displayMs(w)); }
+  });
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+setInterval(()=>{ document.getElementById('clock').textContent =
+  new Date().toLocaleTimeString('zh-HK',{hour12:false}); },1000);
+
+/* ================= card buttons ================= */
+board.addEventListener('click', e=>{
+  const btn = e.target.closest('[data-act]'); if(!btn) return;
+  const w = byId(btn.closest('.card').dataset.id); if(!w) return;
+  const act = btn.dataset.act;
+  if(act==='toggle'){
+    if(w.running){ w.elapsed += now()-w.startTs; w.running=false; }
+    else { w.startTs=now(); w.running=true; }
+    persist(); render();
+  }
+  if(act==='lap'){ w.laps.push(displayMs(w)); persist(); render(); }
+  if(act==='reset'){ w.elapsed=0; w.running=false; w.laps=[]; persist(); render(); }
+  if(act==='edit'){ openEdit(w.id); }
+});
+
+/* ================= add ================= */
+document.getElementById('addBtn').onclick = ()=>{
+  let slot=-1;
+  for(let s=0;s<SLOTS;s++){ if(!bySlot(s)){ slot=s; break; } }
+  if(slot<0){ alert('7×7 方格已滿(49個)。'); return; }
+  watches.push({ id:Date.now(), name:`秒錶 ${watches.length+1}`,
+    color:COLORS[watches.length%COLORS.length],
+    img:null, elapsed:0, running:false, startTs:0, laps:[], slot });
+  persist(); render();
+};
+
+/* ================= long-press drag ================= */
+const LP_MS=350, MOVE_TOL=8;
+let drag=null, lpTimer=null, downInfo=null;
+
+document.addEventListener('touchmove', e=>{ if(drag) e.preventDefault(); }, {passive:false});
+
+board.addEventListener('pointerdown', e=>{
+  if(e.target.closest('button')) return;
+  const card = e.target.closest('.card'); if(!card) return;
+  downInfo = { card, x:e.clientX, y:e.clientY, id:e.pointerId };
+  lpTimer = setTimeout(()=>startDrag(e), LP_MS);
+});
+document.addEventListener('pointermove', e=>{
+  if(downInfo && !drag){
+    if(Math.hypot(e.clientX-downInfo.x, e.clientY-downInfo.y) > MOVE_TOL){
+      clearTimeout(lpTimer); downInfo=null;   // 當係捲動,取消長按
+    }
+  }
+  if(drag){ moveDrag(e.clientX, e.clientY); }
+});
+document.addEventListener('pointerup', e=>{
+  clearTimeout(lpTimer);
+  if(drag) endDrag(e.clientX, e.clientY);
+  downInfo=null;
+});
+document.addEventListener('pointercancel', ()=>{
+  clearTimeout(lpTimer); downInfo=null;
+  if(drag) cancelDrag();
+});
+
+function startDrag(){
+  if(!downInfo) return;
+  const card = downInfo.card;
+  const r = card.getBoundingClientRect();
+  const ghost = card.cloneNode(true);
+  ghost.classList.add('ghost');
+  ghost.style.width=r.width+'px'; ghost.style.height=r.height+'px';
+  ghost.style.left=r.left+'px'; ghost.style.top=r.top+'px';
+  ghost.style.position='fixed'; ghost.style.inset='auto';
+  document.body.appendChild(ghost);
+  card.classList.add('dragging');
+  drag = { id:card.dataset.id, ghost, dx:downInfo.x-r.left, dy:downInfo.y-r.top, card };
+  if(navigator.vibrate) navigator.vibrate(25);
+}
+function moveDrag(x,y){
+  drag.ghost.style.left = (x-drag.dx)+'px';
+  drag.ghost.style.top  = (y-drag.dy)+'px';
+  document.querySelectorAll('.cell.over').forEach(c=>c.classList.remove('over'));
+  const cell = document.elementFromPoint(x,y)?.closest('.cell');
+  if(cell) cell.classList.add('over');
+}
+function endDrag(x,y){
+  const cell = document.elementFromPoint(x,y)?.closest('.cell');
+  if(cell){
+    const target = +cell.dataset.slot;
+    const w = byId(drag.id);
+    const occupant = bySlot(target);
+    if(occupant && occupant.id!==w.id) occupant.slot = w.slot; // 交換位置
+    w.slot = target;
+    persist();
+  }
+  cleanupDrag(); render();
+}
+function cancelDrag(){ cleanupDrag(); render(); }
+function cleanupDrag(){
+  drag.ghost.remove();
+  drag.card.classList.remove('dragging');
+  document.querySelectorAll('.cell.over').forEach(c=>c.classList.remove('over'));
+  drag=null;
+}
+
+/* ================= edit modal ================= */
+const editOverlay = document.getElementById('editOverlay');
+const editSheet   = document.getElementById('editSheet');
+let editingId = null;
+
+function openEdit(id){
+  editingId = id;
+  const w = byId(id);
+  editSheet.innerHTML = `
+    <h2>秒錶設定</h2>
+    <div>
+      <label>名稱</label>
+      <input type="text" id="nameInput" value="${esc(w.name)}" maxlength="20">
+    </div>
+    <div>
+      <label>顏色(22色)</label>
+      <div class="swatches">
+        ${COLORS.map(c=>`<button class="swatch ${c===w.color?'sel':''}" style="background:${c}" data-color="${c}" aria-label="顏色 ${c}"></button>`).join('')}
+      </div>
+    </div>
+    <div>
+      <label>圖片</label>
+      <div class="row">
+        <button id="imgBtn">上載並剪裁</button>
+        ${w.img?'<button id="rmImgBtn">移除圖片</button>':''}
+      </div>
+    </div>
+    ${w.laps.length?`<div><label>圈速記錄</label>
+      <div class="laps-list">${w.laps.map((l,i)=>`圈 ${i+1} — ${fmtPlain(l)}`).reverse().join('<br>')}</div></div>`:''}
+    <div class="row">
+      <button class="danger" id="delBtn">刪除秒錶</button>
+      <button id="closeBtn">完成</button>
+    </div>`;
+  editOverlay.classList.add('open');
+
+  editSheet.querySelector('#nameInput').onchange = e=>{
+    w.name = e.target.value.trim() || w.name; persist(); render();
+  };
+  editSheet.querySelectorAll('.swatch').forEach(s=> s.onclick = ()=>{
+    w.color = s.dataset.color; persist(); render(); openEdit(id);
+  });
+  editSheet.querySelector('#imgBtn').onclick = ()=>{
+    fileTarget = w;
+    fileInput.value = '';   // 重設,揀返同一張相都會觸發
+    fileInput.click();
+  };
+  const rm = editSheet.querySelector('#rmImgBtn');
+  if(rm) rm.onclick = ()=>{ w.img=null; persist(); render(); openEdit(id); };
+  editSheet.querySelector('#delBtn').onclick = ()=>{
+    if(confirm(`刪除「${w.name}」?`)){
+      watches = watches.filter(x=>x.id!==w.id);
+      persist(); render(); closeEdit();
+    }
+  };
+  editSheet.querySelector('#closeBtn').onclick = closeEdit;
+}
+function closeEdit(){ editOverlay.classList.remove('open'); editingId=null; }
+editOverlay.addEventListener('click', e=>{ if(e.target===editOverlay) closeEdit(); });
+
+/* ================= 檔案選擇器 =================
+   固定放喺頁面度。動態臨時建立嘅 input 喺 iOS Safari
+   會俾系統回收,導致第二次之後揀完相冇反應。 */
+const fileInput = document.createElement('input');
+fileInput.type='file'; fileInput.accept='image/*'; fileInput.style.display='none';
+document.body.appendChild(fileInput);
+let fileTarget = null;
+fileInput.addEventListener('change', ()=>{
+  const f = fileInput.files[0];
+  if(f && fileTarget) openCrop(f, fileTarget);
+});
+
+/* ================= crop ================= */
+const cropOverlay = document.getElementById('cropOverlay');
+const cropFrame = document.getElementById('cropFrame');
+const cropImgEl = document.getElementById('cropImg');
+const cropZoom  = document.getElementById('cropZoom');
+let crop=null; // {img, w, h, scale, min, x, y, target}
+
+function openCrop(file, w){
+  if(crop && crop.url) URL.revokeObjectURL(crop.url);
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = ()=>{
+    cropOverlay.classList.add('open');   // 必須先開視窗,先量度到框嘅尺寸
+    const FW = cropFrame.clientWidth  || 280;
+    const FH = cropFrame.clientHeight || 280;
+    const min = Math.max(FW/img.width, FH/img.height);
+    crop = { img, url, w:img.width, h:img.height, scale:min, min, x:0, y:0, target:w, FW, FH };
+    crop.x = (FW - img.width*min)/2;
+    crop.y = (FH - img.height*min)/2;
+    cropImgEl.src = url;
+    cropZoom.min = min; cropZoom.max = min*4; cropZoom.step = min/100; cropZoom.value = min;
+    applyCrop();
+  };
+  img.src = url;
+}
+function clampCrop(){
+  crop.x = Math.min(0, Math.max(crop.FW - crop.w*crop.scale, crop.x));
+  crop.y = Math.min(0, Math.max(crop.FH - crop.h*crop.scale, crop.y));
+}
+function applyCrop(){
+  clampCrop();
+  cropImgEl.style.transform = `translate(${crop.x}px,${crop.y}px) scale(${crop.scale})`;
+  cropImgEl.style.width = crop.w+'px';
+}
+cropZoom.addEventListener('input', ()=>{
+  const ns = +cropZoom.value;
+  // 以框中心做錨點縮放
+  const cx = (crop.FW/2 - crop.x)/crop.scale;
+  const cy = (crop.FH/2 - crop.y)/crop.scale;
+  crop.scale = ns;
+  crop.x = crop.FW/2 - cx*ns;
+  crop.y = crop.FH/2 - cy*ns;
+  applyCrop();
+});
+let panPt=null;
+cropFrame.addEventListener('pointerdown', e=>{
+  panPt={x:e.clientX,y:e.clientY}; cropFrame.setPointerCapture(e.pointerId);
+});
+cropFrame.addEventListener('pointermove', e=>{
+  if(!panPt) return;
+  crop.x += e.clientX-panPt.x; crop.y += e.clientY-panPt.y;
+  panPt={x:e.clientX,y:e.clientY};
+  applyCrop();
+});
+cropFrame.addEventListener('pointerup', ()=>panPt=null);
+cropFrame.addEventListener('pointercancel', ()=>panPt=null);
+
+document.getElementById('cropCancel').onclick = ()=> cropOverlay.classList.remove('open');
+document.getElementById('cropOk').onclick = ()=>{
+  const OUT_W = 480, OUT_H = Math.round(480/CARD_RATIO);
+  const cv = document.createElement('canvas');
+  cv.width=OUT_W; cv.height=OUT_H;
+  const sx = -crop.x/crop.scale, sy = -crop.y/crop.scale;
+  const sw = crop.FW/crop.scale, sh = crop.FH/crop.scale;
+  cv.getContext('2d').drawImage(crop.img, sx, sy, sw, sh, 0, 0, OUT_W, OUT_H);
+  crop.target.img = cv.toDataURL('image/jpeg', 0.78);
+  persist(); render();
+  cropOverlay.classList.remove('open');
+  if(editingId) openEdit(editingId);
+};
+
+render();
+</script>
+</body>
+</html>
