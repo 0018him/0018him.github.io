@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>歌唱分配計時</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@300;500&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#1b1d22; --panel:rgba(36,38,45,.88); --line:#34373f;
+    --text:#e8e6e1; --muted:#8b8e97;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:'Noto Sans TC',sans-serif;
+    min-height:100vh; padding:18px 16px 60px;
+    background-size:cover; background-position:center; background-attachment:fixed;
+  }
+  body.has-bgimg::before{content:''; position:fixed; inset:0; background:rgba(15,16,20,.45); z-index:-1;}
+  .wrap{max-width:860px; margin:0 auto; display:flex; flex-direction:column; gap:20px;}
+  .head{display:flex; justify-content:space-between; align-items:center;}
+  h1{font-size:1.05rem; font-weight:700; letter-spacing:.12em;}
+  h2{font-size:.78rem; font-weight:500; color:var(--muted); letter-spacing:.12em; margin-bottom:10px;}
+  .mono{font-family:'Chivo Mono',monospace; font-variant-numeric:tabular-nums;}
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px;
+    backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);}
+  .btn{padding:9px 16px; border-radius:9px; border:1px solid var(--line);
+    background:rgba(127,127,127,.12); color:var(--text);
+    font-family:inherit; font-size:.85rem; cursor:pointer;}
+  .btn:hover{background:rgba(127,127,127,.25);}
+  .btn.primary{background:var(--text); color:var(--bg); font-weight:700; border-color:transparent;}
+  .btn:disabled{opacity:.35; cursor:default;}
+  .btn.small{padding:5px 12px; font-size:.78rem;}
+
+  /* tabs */
+  .tabs{display:flex; gap:8px;}
+  .tab{flex:1; padding:10px 0; text-align:center; border-radius:10px;
+    border:1px solid var(--line); background:rgba(127,127,127,.08);
+    font-size:.85rem; cursor:pointer; color:var(--muted);}
+  .tab.sel{background:var(--text); color:var(--bg); font-weight:700; border-color:transparent;}
+  .page{display:none; flex-direction:column; gap:20px;}
+  .page.sel{display:flex;}
+
+  /* player */
+  .player{display:flex; flex-direction:column; gap:12px;}
+  .player .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+  video{width:100%; max-height:300px; border-radius:10px; background:#000; display:none;}
+  video.show{display:block;}
+  .timer{font-size:1.9rem; font-weight:300; margin-left:auto;}
+  .timer small{color:var(--muted); font-size:.9rem;}
+  .seek{width:100%;}
+  .filehint{font-size:.72rem; color:var(--muted);}
+
+  /* members (page1) */
+  .members-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;}
+  .members-head h2{margin:0;}
+  .count{display:flex; gap:6px; align-items:center; font-size:.8rem; color:var(--muted);}
+  .members{display:grid; gap:10px;}
+  .member{display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer;}
+  .avatar{width:100%; aspect-ratio:3/4; border-radius:10px;
+    background:rgba(127,127,127,.15); border:3px solid var(--line);
+    filter:grayscale(60%) brightness(.55);
+    transition:filter .18s, border-color .18s, box-shadow .18s;
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.2rem; color:var(--muted); overflow:hidden;}
+  .avatar img{width:100%; height:100%; object-fit:cover;}
+  .member.active .avatar{filter:none; border-color:var(--c); box-shadow:0 0 18px var(--c);}
+  .member .mname{font-size:.7rem; color:var(--muted); max-width:100%;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .member.active .mname{color:var(--text);}
+
+  /* bars */
+  .bars{display:flex; flex-direction:column; gap:9px;}
+  .barrow{display:grid; grid-template-columns:86px 1fr 66px; gap:10px; align-items:center;}
+  .barrow .bname{font-size:.78rem; text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .track{height:22px; background:rgba(127,127,127,.14); border:1px solid var(--line); border-radius:6px; overflow:hidden;}
+  .fill{height:100%; width:0%; background:var(--c); border-radius:5px 0 0 5px; opacity:.92;}
+  .barrow.active .fill{box-shadow:0 0 12px var(--c);}
+  .bval{font-size:.78rem; color:var(--muted);}
+  .barrow.active .bval{color:var(--text);}
+
+  /* stage (page2) */
+  .stage-wrap{position:relative;}
+  .stage-cells{display:grid; grid-template-columns:repeat(7,1fr); gap:6px;}
+  .scell{aspect-ratio:3/4; border-radius:10px; border:1.5px dashed rgba(127,127,127,.35);}
+  .scell.over{border-style:solid; border-color:var(--text); background:rgba(127,127,127,.15);}
+  .stage-people{position:absolute; inset:0; pointer-events:none;}
+  .sm{
+    position:absolute; top:0; height:100%;
+    width:calc((100% - 36px)/7);   /* 6 gaps x 6px */
+    pointer-events:auto; cursor:grab;
+    transition:left .55s cubic-bezier(.25,.9,.3,1);
+    user-select:none; -webkit-user-select:none;
+  }
+  .sm .ph{width:100%; height:100%; border-radius:10px; overflow:hidden;
+    border:3px solid var(--line); background:var(--bg);
+    display:flex; align-items:center; justify-content:center; color:var(--muted);
+    filter:grayscale(60%) brightness(.6);
+    transition:filter .18s, border-color .18s, box-shadow .18s;}
+  .sm .ph img{width:100%; height:100%; object-fit:cover; pointer-events:none;}
+  .sm.active .ph{filter:none; border-color:var(--c); box-shadow:0 0 16px var(--c);}
+  .sm.dragging{opacity:.3;}
+  .sghost{position:fixed; z-index:999; pointer-events:none; opacity:.92;
+    transform:scale(1.06); box-shadow:0 14px 40px rgba(0,0,0,.6); border-radius:10px; overflow:hidden;}
+  .sghost img{width:100%; height:100%; object-fit:cover;}
+
+  /* layers editor */
+  .layer-chips{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;}
+  .chip{padding:5px 12px; border-radius:999px; border:1px solid var(--line);
+    background:none; color:var(--muted); font-size:.75rem; cursor:pointer; font-family:inherit;}
+  .chip.sel{color:var(--text); border-color:var(--text); background:rgba(127,127,127,.12);}
+  .chip .dot{margin-right:5px;}
+
+  select,input[type=text]{padding:8px 10px; border-radius:8px; border:1px solid var(--line);
+    background:rgba(127,127,127,.1); color:var(--text); font-family:inherit; font-size:.85rem;}
+  table{width:100%; border-collapse:collapse; font-size:.82rem;}
+  th{color:var(--muted); font-weight:500; text-align:left; padding:6px 8px; font-size:.72rem;}
+  td{padding:5px 8px; border-top:1px solid var(--line);}
+  td input{width:84px;}
+  .tbtn{padding:4px 9px; border-radius:6px; border:1px solid var(--line);
+    background:none; color:var(--muted); cursor:pointer; font-size:.72rem; font-family:inherit;}
+  .tbtn:hover{color:var(--text); background:rgba(127,127,127,.15);}
+  .dot{display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px;
+    vertical-align:middle; border:1px solid var(--line);}
+  .hint{font-size:.72rem; color:var(--muted); margin-top:10px; line-height:1.7;}
+  .quick{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:12px;}
+
+  /* song library */
+  .songrow{display:flex; gap:8px; align-items:center; padding:8px 0; border-top:1px solid var(--line); flex-wrap:wrap;}
+  .songrow:first-of-type{border-top:none;}
+  .songname{flex:1; font-size:.85rem; min-width:120px;}
+
+  /* modals */
+  .overlay{position:fixed; inset:0; background:rgba(10,11,14,.72); z-index:100;
+    display:none; align-items:center; justify-content:center; padding:16px;}
+  .overlay.open{display:flex;}
+  .sheet{background:var(--bg); border:1px solid var(--line); border-radius:16px;
+    width:min(380px,94vw); max-height:88vh; overflow-y:auto; padding:18px;
+    display:flex; flex-direction:column; gap:14px; color:var(--text);}
+  .sheet h3{font-size:.95rem; letter-spacing:.06em;}
+  .sheet label{font-size:.72rem; color:var(--muted); letter-spacing:.08em; display:block; margin-bottom:6px;}
+  .sheet input[type=text]{width:100%;}
+  .swatches{display:grid; grid-template-columns:repeat(8,1fr); gap:8px;}
+  .swatch{width:100%; aspect-ratio:1; border-radius:50%; border:2px solid rgba(127,127,127,.4); cursor:pointer;}
+  .swatch.sel{border-color:var(--text); box-shadow:0 0 0 2px rgba(127,127,127,.5);}
+  .sheet .row{display:flex; gap:8px;}
+  .sheet .row .btn{flex:1;}
+
+  @media (max-width:620px){
+    .barrow{grid-template-columns:64px 1fr 58px;}
+    .timer{font-size:1.4rem;}
+    td input{width:66px;}
+  }
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <h1>歌唱分配計時</h1>
+    <button class="btn small" id="themeBtn">外觀</button>
+  </div>
+
+  <!-- player (兩頁共用) -->
+  <div class="panel player">
+    <video id="media" playsinline></video>
+    <div class="row">
+      <button class="btn" id="loadBtn">選擇音樂/影片檔</button>
+      <button class="btn primary" id="playBtn" disabled>播放</button>
+      <div class="timer mono"><span id="cur">00:00.0</span> <small id="dur">/ 00:00</small></div>
+    </div>
+    <input type="range" class="seek" id="seek" min="0" max="100" step="0.1" value="0" disabled>
+    <div class="filehint" id="fileHint">支援 mp3 等音檔及 mp4 等影片。檔案只在本次開啟中使用,不會上傳到任何地方。</div>
+  </div>
+
+  <!-- tabs -->
+  <div class="tabs">
+    <div class="tab sel" data-page="1">歌詞分配</div>
+    <div class="tab" data-page="2">站位動線</div>
+  </div>
+
+  <!-- ============ page 1 ============ -->
+  <div class="page sel" id="page1">
+    <div>
+      <div class="members-head">
+        <h2>成員(點擊頭像進行設定)</h2>
+        <div class="count">
+          <button class="btn small" id="memMinus">−</button>
+          <span id="memCount" class="mono"></span>
+          <button class="btn small" id="memPlus">＋</button>
+        </div>
+      </div>
+      <div class="members" id="members"></div>
+    </div>
+
+    <div>
+      <h2>累計演唱時間</h2>
+      <div class="bars" id="bars"></div>
+    </div>
+
+    <div class="panel">
+      <h2>段落分配</h2>
+      <div class="quick">
+        <select id="quickMember"></select>
+        <button class="btn" id="markBtn" disabled>▶ 由此刻開始標記</button>
+        <span class="filehint" id="markState"></span>
+      </div>
+      <table>
+        <thead><tr><th>成員</th><th>開始</th><th>結束</th><th></th><th></th></tr></thead>
+        <tbody id="segBody"></tbody>
+      </table>
+      <div class="hint">
+        方式一:播放時聽到某人開口,按「由此刻開始標記」,唱完再按一次結束。<br>
+        方式二:表格直接輸入時間(格式 分:秒.一位小數,如 1:23.5),或按「取now」抓當前播放位置。
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ page 2 ============ -->
+  <div class="page" id="page2">
+    <div>
+      <h2>舞台(1×7)——長按照片拖到目標格,會在當前播放時間建立走位</h2>
+      <div class="stage-wrap">
+        <div class="stage-cells" id="stageCells"></div>
+        <div class="stage-people" id="stagePeople"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>走位圖層</h2>
+      <div class="layer-chips" id="layerChips"></div>
+      <table>
+        <thead><tr><th>成員</th><th>時間</th><th>移至格</th><th></th></tr></thead>
+        <tbody id="formBody"></tbody>
+      </table>
+      <div class="hint">
+        每一行是一個「走位指令」:某成員在某時刻滑到某格。多人同格時只看到最前面的人(最近移入者在前),
+        被遮住的人在這裡依然可以選取和修改。時間 0:00.0 的指令代表開場站位。
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ song library ============ -->
+  <div class="panel">
+    <h2>歌曲儲存庫</h2>
+    <div class="quick">
+      <button class="btn" id="saveNewBtn">＋ 將目前內容儲存為新歌曲</button>
+    </div>
+    <div id="songList"></div>
+    <div class="hint">「儲存」會同時保存兩頁內容:歌詞分配+站位動線,以及成員名稱、照片、顏色。音樂檔案不會被保存,載入歌曲後需重新選擇音檔。</div>
+  </div>
+</div>
+
+<!-- member modal -->
+<div class="overlay" id="memOverlay"><div class="sheet" id="memSheet"></div></div>
+
+<!-- theme modal -->
+<div class="overlay" id="themeOverlay">
+  <div class="sheet">
+    <h3>介面外觀</h3>
+    <div><label>背景顏色(16色)</label><div class="swatches" id="themeSwatches"></div></div>
+    <div><label>背景圖片</label>
+      <div class="row">
+        <button class="btn" id="bgImgBtn">上載背景圖</button>
+        <button class="btn" id="bgImgRm">移除背景圖</button>
+      </div>
+    </div>
+    <button class="btn" id="themeClose">完成</button>
+  </div>
+</div>
+
+<script>
+/* ================= constants ================= */
+const PALETTE = [
+  '#e53935','#fb8c00','#fdd835','#43a047','#1e88e5','#3949ab','#8e24aa',
+  '#ef9a9a','#ffcc80','#fff59d','#a5d6a7','#90caf9','#9fa8da','#ce93d8',
+  '#111111','#ffffff'
+];
+const MIN_N=2, MAX_N=7, CELLS=7;
+function lum(hex){
+  const n=parseInt(hex.slice(1),16);
+  return (0.299*((n>>16)&255)+0.587*((n>>8)&255)+0.114*(n&255))/255;
+}
+
+/* ================= storage ================= */
+function safeGet(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
+function safeSet(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){ alert('儲存空間不足,部分內容可能未能保存。可刪除舊歌曲或背景圖騰出空間。'); } }
+
+let data = safeGet('lineDist2') || {
+  members: Array.from({length:7},(_,i)=>({name:`成員 ${i+1}`,img:null,color:PALETTE[i%14]})),
+  segments: [], theme:{bg:'#1b1d22',img:null}
+};
+data.formations = data.formations || [];  // {t, m, slot}
+data.theme = data.theme || {bg:'#1b1d22',img:null};
+data.members.forEach((m,i)=>{ m.color = m.color || PALETTE[i%14]; });
+/* 上限改為 7:多出的成員裁走 */
+if(data.members.length > MAX_N){
+  data.members = data.members.slice(0,MAX_N);
+  data.segments = data.segments.filter(g=>g.m<MAX_N);
+  data.formations = data.formations.filter(f=>f.m<MAX_N);
+}
+let lib = safeGet('lineDistLib1') || { songs: [] };
+
+function persist(){ safeSet('lineDist2', data); }
+function persistLib(){ safeSet('lineDistLib1', lib); }
+const N = ()=> data.members.length;
+
+/* ================= theme ================= */
+function applyTheme(){
+  const t=data.theme, root=document.documentElement.style;
+  if(t.img){
+    document.body.style.backgroundImage=`url('${t.img}')`;
+    document.body.style.backgroundColor='#1b1d22';
+    document.body.classList.add('has-bgimg');
+    root.setProperty('--text','#e8e6e1'); root.setProperty('--muted','#a9acb4');
+    root.setProperty('--panel','rgba(24,25,30,.78)'); root.setProperty('--line','rgba(255,255,255,.18)');
+    root.setProperty('--bg','#1b1d22');
+  } else {
+    document.body.style.backgroundImage='none';
+    document.body.classList.remove('has-bgimg');
+    const c=t.bg||'#1b1d22';
+    document.body.style.backgroundColor=c;
+    root.setProperty('--bg',c);
+    if(lum(c)>0.55){
+      root.setProperty('--text','#1c1d21'); root.setProperty('--muted','#585b63');
+      root.setProperty('--panel','rgba(255,255,255,.55)'); root.setProperty('--line','rgba(0,0,0,.22)');
+    } else {
+      root.setProperty('--text','#e8e6e1'); root.setProperty('--muted','#8b8e97');
+      root.setProperty('--panel','rgba(255,255,255,.06)'); root.setProperty('--line','rgba(255,255,255,.16)');
+    }
+  }
+}
+
+/* ================= helpers ================= */
+const p = n => String(n).padStart(2,'0');
+const fmtT = s => `${p(Math.floor(s/60))}:${p(Math.floor(s%60))}.${Math.floor(s*10%10)}`;
+const fmtD = s => `${p(Math.floor(s/60))}:${p(Math.floor(s%60))}`;
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function parseT(str){
+  const m=String(str).trim().match(/^(?:(\d+):)?(\d+(?:\.\d+)?)$/);
+  if(!m) return null;
+  return (+(m[1]||0))*60+(+m[2]);
+}
+function sungUpTo(mi,t){
+  let s=0;
+  for(const g of data.segments){ if(g.m===mi) s+=Math.max(0,Math.min(g.e,t)-g.s); }
+  return s;
+}
+const totalOf = mi => sungUpTo(mi,Infinity);
+const isActive = (mi,t)=> data.segments.some(g=>g.m===mi && t>=g.s && t<g.e);
+/* 站位:時刻 t 成員 mi 所在格,以及決定前後的最近走位時間 */
+function slotOf(mi,t){
+  let slot=Math.min(mi,CELLS-1), kt=-1;
+  for(const f of data.formations){
+    if(f.m===mi && f.t<=t && f.t>kt){ slot=f.slot; kt=f.t; }
+  }
+  return {slot, kt};
+}
+
+/* ================= file inputs ================= */
+function makeInput(accept,onFile){
+  const inp=document.createElement('input');
+  inp.type='file'; inp.accept=accept; inp.style.display='none';
+  document.body.appendChild(inp);
+  inp.addEventListener('change',()=>{ if(inp.files[0]) onFile(inp.files[0]); });
+  return inp;
+}
+
+/* ================= media ================= */
+const media=document.getElementById('media');
+const playBtn=document.getElementById('playBtn');
+const seek=document.getElementById('seek');
+let mediaReady=false, mediaUrl=null;
+
+const mediaInput=makeInput('audio/*,video/*,.mp3,.m4a,.aac,.wav,.ogg,.mp4,.mov,.webm', f=>{
+  if(mediaUrl) URL.revokeObjectURL(mediaUrl);
+  mediaUrl=URL.createObjectURL(f);
+  media.src=mediaUrl;
+  media.classList.toggle('show', f.type.startsWith('video'));
+  document.getElementById('fileHint').textContent=`已載入:${f.name}`;
+});
+document.getElementById('loadBtn').onclick=()=>{ mediaInput.value=''; mediaInput.click(); };
+media.addEventListener('loadedmetadata',()=>{
+  mediaReady=true;
+  playBtn.disabled=false; seek.disabled=false;
+  document.getElementById('markBtn').disabled=false;
+  seek.max=media.duration;
+  document.getElementById('dur').textContent='/ '+fmtD(media.duration);
+});
+media.addEventListener('error',()=>{
+  const codes={1:'載入被中斷',2:'網絡錯誤',3:'檔案已損壞或編碼異常,無法解碼',4:'瀏覽器不支援此檔案格式'};
+  document.getElementById('fileHint').textContent=
+    '載入失敗:'+(codes[media.error?.code]||'未知錯誤')+'。可嘗試重新轉檔為標準 mp3/m4a。';
+});
+playBtn.onclick=()=>{
+  if(media.paused){ media.play(); playBtn.textContent='暫停'; }
+  else { media.pause(); playBtn.textContent='播放'; }
+};
+media.addEventListener('ended',()=>{ playBtn.textContent='播放'; });
+seek.addEventListener('input',()=>{ media.currentTime=+seek.value; });
+
+/* ================= tabs ================= */
+document.querySelectorAll('.tab').forEach(t=> t.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('sel',x===t));
+  document.querySelectorAll('.page').forEach(pg=>
+    pg.classList.toggle('sel', pg.id==='page'+t.dataset.page));
+});
+
+/* ================= members (page1) ================= */
+const membersEl=document.getElementById('members');
+function renderMembers(){
+  membersEl.style.gridTemplateColumns=`repeat(${N()},1fr)`;
+  membersEl.innerHTML='';
+  data.members.forEach((m,i)=>{
+    const d=document.createElement('div');
+    d.className='member'; d.dataset.i=i;
+    d.style.setProperty('--c',m.color);
+    d.innerHTML=`<div class="avatar">${m.img?`<img src="${m.img}" alt="">`:'♪'}</div>
+      <div class="mname">${esc(m.name)}</div>`;
+    d.onclick=()=>openMember(i);
+    membersEl.appendChild(d);
+  });
+  document.getElementById('memCount').textContent=N();
+}
+document.getElementById('memPlus').onclick=()=>{
+  if(N()>=MAX_N) return;
+  data.members.push({name:`成員 ${N()+1}`,img:null,color:PALETTE[N()%14]});
+  persist(); renderAll();
+};
+document.getElementById('memMinus').onclick=()=>{
+  if(N()<=MIN_N) return;
+  const gone=N()-1;
+  const used=data.segments.some(g=>g.m===gone)||data.formations.some(f=>f.m===gone);
+  if(used && !confirm(`「${data.members[gone].name}」已有標記,一併刪除?`)) return;
+  data.members.pop();
+  data.segments=data.segments.filter(g=>g.m<N());
+  data.formations=data.formations.filter(f=>f.m<N());
+  persist(); renderAll();
+};
+
+let photoTarget=null;
+const photoInput=makeInput('image/*', f=>{
+  const url=URL.createObjectURL(f);
+  const img=new Image();
+  img.onload=()=>{
+    const W=240,H=320,R=3/4;
+    let sw,sh;
+    if(img.width/img.height>R){ sh=img.height; sw=sh*R; } else { sw=img.width; sh=sw/R; }
+    const cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+    cv.getContext('2d').drawImage(img,(img.width-sw)/2,(img.height-sh)/2,sw,sh,0,0,W,H);
+    data.members[photoTarget].img=cv.toDataURL('image/jpeg',.8);
+    URL.revokeObjectURL(url);
+    persist(); renderAll();
+    if(photoTarget!=null) openMember(photoTarget);
+  };
+  img.src=url;
+});
+
+const memOverlay=document.getElementById('memOverlay');
+const memSheet=document.getElementById('memSheet');
+function openMember(i){
+  const m=data.members[i];
+  memSheet.innerHTML=`
+    <h3>成員設定</h3>
+    <div><label>名稱</label><input type="text" id="mName" value="${esc(m.name)}" maxlength="20"></div>
+    <div><label>Bar 顏色(16色)</label>
+      <div class="swatches">${PALETTE.map(c=>
+        `<button class="swatch ${c===m.color?'sel':''}" style="background:${c}" data-c="${c}"></button>`).join('')}</div></div>
+    <div><label>照片(3:4 直向)</label>
+      <div class="row">
+        <button class="btn" id="mPhoto">上載照片</button>
+        ${m.img?'<button class="btn" id="mPhotoRm">移除照片</button>':''}
+      </div></div>
+    <button class="btn" id="mClose">完成</button>`;
+  memOverlay.classList.add('open');
+  memSheet.querySelector('#mName').onchange=e=>{
+    m.name=e.target.value.trim()||m.name; persist(); renderAll();
+  };
+  memSheet.querySelectorAll('.swatch').forEach(s=> s.onclick=()=>{
+    m.color=s.dataset.c; persist(); renderAll(); openMember(i);
+  });
+  memSheet.querySelector('#mPhoto').onclick=()=>{
+    photoTarget=i; photoInput.value=''; photoInput.click();
+  };
+  const rm=memSheet.querySelector('#mPhotoRm');
+  if(rm) rm.onclick=()=>{ m.img=null; persist(); renderAll(); openMember(i); };
+  memSheet.querySelector('#mClose').onclick=()=>memOverlay.classList.remove('open');
+}
+memOverlay.addEventListener('click',e=>{ if(e.target===memOverlay) memOverlay.classList.remove('open'); });
+
+/* ================= bars ================= */
+const barsEl=document.getElementById('bars');
+function renderBars(){
+  barsEl.innerHTML='';
+  data.members.forEach((m,i)=>{
+    const r=document.createElement('div');
+    r.className='barrow'; r.dataset.i=i;
+    r.style.setProperty('--c',m.color);
+    r.innerHTML=`<div class="bname">${esc(m.name)}</div>
+      <div class="track"><div class="fill"></div></div>
+      <div class="bval mono">0.0s</div>`;
+    barsEl.appendChild(r);
+  });
+}
+
+/* ================= stage (page2) ================= */
+const stageCells=document.getElementById('stageCells');
+const stagePeople=document.getElementById('stagePeople');
+function renderStage(){
+  stageCells.innerHTML='';
+  for(let s=0;s<CELLS;s++){
+    const c=document.createElement('div');
+    c.className='scell'; c.dataset.slot=s;
+    stageCells.appendChild(c);
+  }
+  stagePeople.innerHTML='';
+  data.members.forEach((m,i)=>{
+    const el=document.createElement('div');
+    el.className='sm'; el.dataset.i=i; el.dataset.slot='';
+    el.style.setProperty('--c',m.color);
+    el.innerHTML=`<div class="ph">${m.img?`<img src="${m.img}" alt="">`:'♪'}</div>`;
+    stagePeople.appendChild(el);
+  });
+}
+function slotLeft(slot){ return `calc(${slot} * ((100% - 36px) / 7 + 6px))`; }
+function updateStage(t){
+  stagePeople.querySelectorAll('.sm').forEach(el=>{
+    const i=+el.dataset.i;
+    const {slot,kt}=slotOf(i,t);
+    if(el.dataset.slot!==String(slot)){
+      el.style.left=slotLeft(slot);
+      el.dataset.slot=slot;
+    }
+    el.style.zIndex=10+Math.round((kt+1)*10);   /* 較後移入者在前 */
+    el.classList.toggle('active', isActive(i,t));
+  });
+}
+
+/* stage long-press drag */
+const LP_MS=350, MOVE_TOL=8;
+let sdrag=null, sTimer=null, sDown=null;
+document.addEventListener('touchmove',e=>{ if(sdrag) e.preventDefault(); },{passive:false});
+stagePeople.addEventListener('pointerdown',e=>{
+  const el=e.target.closest('.sm'); if(!el) return;
+  sDown={el,x:e.clientX,y:e.clientY};
+  sTimer=setTimeout(()=>startSDrag(),LP_MS);
+});
+document.addEventListener('pointermove',e=>{
+  if(sDown && !sdrag && Math.hypot(e.clientX-sDown.x,e.clientY-sDown.y)>MOVE_TOL){
+    clearTimeout(sTimer); sDown=null;
+  }
+  if(sdrag){
+    sdrag.ghost.style.left=(e.clientX-sdrag.dx)+'px';
+    sdrag.ghost.style.top=(e.clientY-sdrag.dy)+'px';
+    stageCells.querySelectorAll('.scell.over').forEach(c=>c.classList.remove('over'));
+    const cell=document.elementFromPoint(e.clientX,e.clientY)?.closest('.scell');
+    if(cell) cell.classList.add('over');
+  }
+});
+document.addEventListener('pointerup',e=>{
+  clearTimeout(sTimer);
+  if(sdrag){
+    const cell=document.elementFromPoint(e.clientX,e.clientY)?.closest('.scell');
+    if(cell){
+      const t=+(media.currentTime||0).toFixed(1);
+      const m=+sdrag.el.dataset.i;
+      /* 同一成員同一時刻只保留一個指令 */
+      data.formations=data.formations.filter(f=>!(f.m===m && Math.abs(f.t-t)<0.05));
+      data.formations.push({t, m, slot:+cell.dataset.slot});
+      data.formations.sort((a,b)=>a.t-b.t);
+      persist(); renderForm();
+    }
+    sdrag.ghost.remove();
+    sdrag.el.classList.remove('dragging');
+    stageCells.querySelectorAll('.scell.over').forEach(c=>c.classList.remove('over'));
+    sdrag=null;
+  }
+  sDown=null;
+});
+document.addEventListener('pointercancel',()=>{
+  clearTimeout(sTimer); sDown=null;
+  if(sdrag){
+    sdrag.ghost.remove(); sdrag.el.classList.remove('dragging');
+    stageCells.querySelectorAll('.scell.over').forEach(c=>c.classList.remove('over'));
+    sdrag=null;
+  }
+});
+function startSDrag(){
+  if(!sDown) return;
+  const el=sDown.el, r=el.getBoundingClientRect();
+  const m=data.members[+el.dataset.i];
+  const ghost=document.createElement('div');
+  ghost.className='sghost';
+  ghost.style.width=r.width+'px'; ghost.style.height=r.height+'px';
+  ghost.style.left=r.left+'px'; ghost.style.top=r.top+'px';
+  ghost.innerHTML=m.img?`<img src="${m.img}">`:'';
+  ghost.style.background=m.img?'':'rgba(60,62,70,.9)';
+  document.body.appendChild(ghost);
+  el.classList.add('dragging');
+  sdrag={el,ghost,dx:sDown.x-r.left,dy:sDown.y-r.top};
+  if(navigator.vibrate) navigator.vibrate(25);
+}
+
+/* ================= formation layers editor ================= */
+let formFilter=-1;
+const layerChips=document.getElementById('layerChips');
+const formBody=document.getElementById('formBody');
+function renderForm(){
+  layerChips.innerHTML=`<button class="chip ${formFilter===-1?'sel':''}" data-i="-1">全部</button>`+
+    data.members.map((m,i)=>
+      `<button class="chip ${formFilter===i?'sel':''}" data-i="${i}">
+        <span class="dot" style="background:${m.color}"></span>${esc(m.name)}</button>`).join('');
+  layerChips.querySelectorAll('.chip').forEach(c=> c.onclick=()=>{
+    formFilter=+c.dataset.i; renderForm();
+  });
+
+  formBody.innerHTML='';
+  data.formations.forEach((f,fi)=>{
+    if(formFilter!==-1 && f.m!==formFilter) return;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td><span class="dot" style="background:${data.members[f.m].color}"></span>
+        <select data-f="m">${data.members.map((m,i)=>
+          `<option value="${i}" ${i===f.m?'selected':''}>${esc(m.name)}</option>`).join('')}</select></td>
+      <td><input type="text" class="mono" value="${fmtT(f.t)}" data-f="t">
+          <button class="tbtn" data-f="now">取now</button></td>
+      <td><select data-f="slot">${Array.from({length:CELLS},(_,s)=>
+          `<option value="${s}" ${s===f.slot?'selected':''}>第 ${s+1} 格</option>`).join('')}</select></td>
+      <td><button class="tbtn" data-f="del">刪除</button></td>`;
+    tr.querySelector('[data-f=m]').onchange=e=>{ f.m=+e.target.value; persist(); renderForm(); };
+    tr.querySelector('[data-f=t]').onchange=e=>{
+      const v=parseT(e.target.value); if(v!=null){ f.t=+v.toFixed(1);
+        data.formations.sort((a,b)=>a.t-b.t); persist(); } renderForm(); };
+    tr.querySelector('[data-f=now]').onclick=()=>{
+      f.t=+(media.currentTime||0).toFixed(1);
+      data.formations.sort((a,b)=>a.t-b.t); persist(); renderForm(); };
+    tr.querySelector('[data-f=slot]').onchange=e=>{ f.slot=+e.target.value; persist(); };
+    tr.querySelector('[data-f=del]').onclick=()=>{
+      data.formations.splice(fi,1); persist(); renderForm(); };
+    formBody.appendChild(tr);
+  });
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td colspan="4"><button class="tbtn" id="addForm">＋ 手動新增走位</button></td>`;
+  tr.querySelector('#addForm').onclick=()=>{
+    const m=formFilter===-1?0:formFilter;
+    data.formations.push({t:+(media.currentTime||0).toFixed(1), m, slot:slotOf(m,media.currentTime||0).slot});
+    data.formations.sort((a,b)=>a.t-b.t);
+    persist(); renderForm();
+  };
+  formBody.appendChild(tr);
+}
+
+/* ================= live loop ================= */
+function frame(){
+  const t=media.currentTime||0;
+  document.getElementById('cur').textContent=fmtT(t);
+  if(mediaReady && !seek.matches(':active')) seek.value=t;
+  const maxTotal=Math.max(1,...data.members.map((_,i)=>totalOf(i)));
+  document.querySelectorAll('.barrow').forEach(r=>{
+    const i=+r.dataset.i, v=sungUpTo(i,t);
+    r.querySelector('.fill').style.width=(v/maxTotal*100)+'%';
+    r.querySelector('.bval').textContent=v.toFixed(1)+'s';
+    r.classList.toggle('active',isActive(i,t));
+  });
+  document.querySelectorAll('.member').forEach(d=>
+    d.classList.toggle('active',isActive(+d.dataset.i,t)));
+  updateStage(t);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+/* ================= segments (page1) ================= */
+const segBody=document.getElementById('segBody');
+const quickMember=document.getElementById('quickMember');
+const markBtn=document.getElementById('markBtn');
+const markState=document.getElementById('markState');
+let marking=null;
+function renderQuickSelect(){
+  quickMember.innerHTML=data.members.map((m,i)=>
+    `<option value="${i}">${esc(m.name)}</option>`).join('');
+}
+markBtn.onclick=()=>{
+  const t=media.currentTime;
+  if(!marking){
+    marking={m:+quickMember.value,s:t};
+    markBtn.textContent='■ 結束標記';
+    markState.textContent=`${data.members[marking.m].name} 由 ${fmtT(t)} 開始…`;
+  } else {
+    if(t>marking.s+0.2){
+      data.segments.push({m:marking.m,s:+marking.s.toFixed(1),e:+t.toFixed(1)});
+      data.segments.sort((a,b)=>a.s-b.s);
+      persist(); renderSegs();
+    }
+    marking=null;
+    markBtn.textContent='▶ 由此刻開始標記';
+    markState.textContent='';
+  }
+};
+function renderSegs(){
+  segBody.innerHTML='';
+  data.segments.forEach((g,gi)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td><span class="dot" style="background:${data.members[g.m].color}"></span>
+        <select data-f="m">${data.members.map((m,i)=>
+          `<option value="${i}" ${i===g.m?'selected':''}>${esc(m.name)}</option>`).join('')}</select></td>
+      <td><input type="text" class="mono" value="${fmtT(g.s)}" data-f="s">
+          <button class="tbtn" data-f="nows">取now</button></td>
+      <td><input type="text" class="mono" value="${fmtT(g.e)}" data-f="e">
+          <button class="tbtn" data-f="nowe">取now</button></td>
+      <td class="mono" style="color:var(--muted)">${(g.e-g.s).toFixed(1)}s</td>
+      <td><button class="tbtn" data-f="del">刪除</button></td>`;
+    tr.querySelector('[data-f=m]').onchange=e=>{ g.m=+e.target.value; persist(); renderSegs(); };
+    tr.querySelector('[data-f=s]').onchange=e=>{
+      const v=parseT(e.target.value); if(v!=null&&v<g.e){ g.s=v; persist(); } renderSegs(); };
+    tr.querySelector('[data-f=e]').onchange=e=>{
+      const v=parseT(e.target.value); if(v!=null&&v>g.s){ g.e=v; persist(); } renderSegs(); };
+    tr.querySelector('[data-f=nows]').onclick=()=>{
+      const t=+media.currentTime.toFixed(1); if(t<g.e){ g.s=t; persist(); renderSegs(); } };
+    tr.querySelector('[data-f=nowe]').onclick=()=>{
+      const t=+media.currentTime.toFixed(1); if(t>g.s){ g.e=t; persist(); renderSegs(); } };
+    tr.querySelector('[data-f=del]').onclick=()=>{
+      data.segments.splice(gi,1); persist(); renderSegs(); };
+    segBody.appendChild(tr);
+  });
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td colspan="5"><button class="tbtn" id="addSeg">＋ 手動新增段落</button></td>`;
+  tr.querySelector('#addSeg').onclick=()=>{
+    const t=+(media.currentTime||0).toFixed(1);
+    data.segments.push({m:+quickMember.value,s:t,e:t+5});
+    persist(); renderSegs();
+  };
+  segBody.appendChild(tr);
+}
+
+/* ================= song library ================= */
+const songList=document.getElementById('songList');
+function snapshot(){
+  return JSON.parse(JSON.stringify({
+    members:data.members, segments:data.segments, formations:data.formations
+  }));
+}
+document.getElementById('saveNewBtn').onclick=()=>{
+  lib.songs.push({ id:Date.now(), name:`歌曲 ${lib.songs.length+1}`, snap:snapshot() });
+  persistLib(); renderSongs();
+};
+function renderSongs(){
+  songList.innerHTML = lib.songs.length? '' :
+    '<div class="hint" style="margin:0">尚未有已儲存的歌曲。</div>';
+  lib.songs.forEach((s,si)=>{
+    const d=document.createElement('div');
+    d.className='songrow';
+    d.innerHTML=`
+      <span class="songname">${esc(s.name)}</span>
+      <button class="tbtn" data-f="load">載入</button>
+      <button class="tbtn" data-f="save">覆蓋儲存</button>
+      <button class="tbtn" data-f="ren">改名</button>
+      <button class="tbtn" data-f="del">刪除</button>`;
+    d.querySelector('[data-f=load]').onclick=()=>{
+      if(!confirm(`載入「${s.name}」?目前未儲存的內容會被取代。`)) return;
+      const sn=JSON.parse(JSON.stringify(s.snap));
+      data.members=sn.members; data.segments=sn.segments; data.formations=sn.formations||[];
+      persist(); renderAll();
+    };
+    d.querySelector('[data-f=save]').onclick=()=>{
+      if(!confirm(`用目前內容覆蓋「${s.name}」?`)) return;
+      s.snap=snapshot(); persistLib();
+    };
+    d.querySelector('[data-f=ren]').onclick=()=>{
+      const nn=prompt('歌曲名稱:',s.name);
+      if(nn&&nn.trim()){ s.name=nn.trim(); persistLib(); renderSongs(); }
+    };
+    d.querySelector('[data-f=del]').onclick=()=>{
+      if(!confirm(`刪除「${s.name}」?此操作無法還原。`)) return;
+      lib.songs.splice(si,1); persistLib(); renderSongs();
+    };
+    songList.appendChild(d);
+  });
+}
+
+/* ================= theme UI ================= */
+const themeOverlay=document.getElementById('themeOverlay');
+document.getElementById('themeBtn').onclick=()=>{
+  const box=document.getElementById('themeSwatches');
+  box.innerHTML=PALETTE.map(c=>
+    `<button class="swatch ${(!data.theme.img&&c===data.theme.bg)?'sel':''}" style="background:${c}" data-c="${c}"></button>`).join('');
+  box.querySelectorAll('.swatch').forEach(s=> s.onclick=()=>{
+    data.theme.bg=s.dataset.c; data.theme.img=null;
+    persist(); applyTheme();
+    box.querySelectorAll('.swatch').forEach(x=>x.classList.toggle('sel',x===s));
+  });
+  themeOverlay.classList.add('open');
+};
+const bgInput=makeInput('image/*', f=>{
+  const url=URL.createObjectURL(f);
+  const img=new Image();
+  img.onload=()=>{
+    const max=1600, sc=Math.min(1,max/Math.max(img.width,img.height));
+    const cv=document.createElement('canvas');
+    cv.width=img.width*sc; cv.height=img.height*sc;
+    cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+    data.theme.img=cv.toDataURL('image/jpeg',.72);
+    URL.revokeObjectURL(url);
+    persist(); applyTheme();
+  };
+  img.src=url;
+});
+document.getElementById('bgImgBtn').onclick=()=>{ bgInput.value=''; bgInput.click(); };
+document.getElementById('bgImgRm').onclick=()=>{ data.theme.img=null; persist(); applyTheme(); };
+document.getElementById('themeClose').onclick=()=>themeOverlay.classList.remove('open');
+themeOverlay.addEventListener('click',e=>{ if(e.target===themeOverlay) themeOverlay.classList.remove('open'); });
+
+/* ================= init ================= */
+function renderAll(){
+  renderMembers(); renderBars(); renderQuickSelect(); renderSegs();
+  renderStage(); renderForm();
+}
+applyTheme(); renderAll(); renderSongs();
+</script>
+</body>
+</html>
