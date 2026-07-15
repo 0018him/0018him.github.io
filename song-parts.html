@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>歌唱分配計時</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@300;500&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#1b1d22; --panel:#24262d; --line:#34373f;
+    --text:#e8e6e1; --muted:#8b8e97;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:'Noto Sans TC',sans-serif;
+    min-height:100vh; padding:18px 16px 60px;
+  }
+  .wrap{max-width:860px; margin:0 auto; display:flex; flex-direction:column; gap:22px;}
+  h1{font-size:1.05rem; font-weight:700; letter-spacing:.12em;}
+  h2{font-size:.78rem; font-weight:500; color:var(--muted); letter-spacing:.12em; margin-bottom:10px;}
+  .mono{font-family:'Chivo Mono',monospace; font-variant-numeric:tabular-nums;}
+
+  /* ---- player ---- */
+  .player{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:12px;}
+  .player .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+  .btn{
+    padding:9px 18px; border-radius:9px; border:1px solid var(--line);
+    background:rgba(255,255,255,.06); color:var(--text);
+    font-family:inherit; font-size:.85rem; cursor:pointer;
+  }
+  .btn:hover{background:rgba(255,255,255,.13);}
+  .btn.primary{background:var(--text); color:#15161a; font-weight:700; border-color:transparent;}
+  .btn:disabled{opacity:.35; cursor:default;}
+  .timer{font-size:1.9rem; font-weight:300; margin-left:auto;}
+  .timer small{color:var(--muted); font-size:.9rem;}
+  .seek{width:100%;}
+  .filehint{font-size:.72rem; color:var(--muted);}
+
+  /* ---- members ---- */
+  .members{display:grid; grid-template-columns:repeat(7,1fr); gap:10px;}
+  .member{display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer;}
+  .avatar{
+    width:100%; aspect-ratio:1; border-radius:50%; object-fit:cover;
+    background:var(--panel); border:3px solid var(--line);
+    filter:grayscale(60%) brightness(.55); transition:filter .18s, border-color .18s, box-shadow .18s;
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.2rem; color:var(--muted); overflow:hidden;
+  }
+  .avatar img{width:100%; height:100%; object-fit:cover;}
+  .member.active .avatar{
+    filter:none; border-color:var(--c);
+    box-shadow:0 0 18px var(--c);
+  }
+  .member .mname{font-size:.7rem; color:var(--muted); max-width:100%;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .member.active .mname{color:var(--text);}
+
+  /* ---- bars ---- */
+  .bars{display:flex; flex-direction:column; gap:9px;}
+  .barrow{display:grid; grid-template-columns:86px 1fr 66px; gap:10px; align-items:center;}
+  .barrow .bname{font-size:.78rem; text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .track{height:22px; background:var(--panel); border:1px solid var(--line); border-radius:6px; overflow:hidden;}
+  .fill{height:100%; width:0%; background:var(--c); border-radius:5px 0 0 5px;
+    transition:none; opacity:.9;}
+  .barrow.active .fill{box-shadow:0 0 12px var(--c);}
+  .bval{font-size:.78rem; color:var(--muted); text-align:left;}
+  .barrow.active .bval{color:var(--text);}
+
+  /* ---- segments ---- */
+  .seg-panel{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px;}
+  .quick{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:12px;}
+  select,input[type=text]{
+    padding:8px 10px; border-radius:8px; border:1px solid var(--line);
+    background:var(--bg); color:var(--text); font-family:inherit; font-size:.85rem;
+  }
+  table{width:100%; border-collapse:collapse; font-size:.82rem;}
+  th{color:var(--muted); font-weight:500; text-align:left; padding:6px 8px; font-size:.72rem; letter-spacing:.08em;}
+  td{padding:5px 8px; border-top:1px solid var(--line);}
+  td input{width:84px;}
+  .tbtn{padding:4px 9px; border-radius:6px; border:1px solid var(--line);
+    background:none; color:var(--muted); cursor:pointer; font-size:.72rem; font-family:inherit;}
+  .tbtn:hover{color:var(--text); background:rgba(255,255,255,.07);}
+  .dot{display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; vertical-align:middle;}
+  .hint{font-size:.72rem; color:var(--muted); margin-top:10px; line-height:1.7;}
+  @media (max-width:620px){
+    .barrow{grid-template-columns:64px 1fr 58px;}
+    .timer{font-size:1.4rem;}
+    td input{width:66px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>歌唱分配計時</h1>
+
+  <!-- player -->
+  <div class="player">
+    <div class="row">
+      <button class="btn" id="loadBtn">選擇音樂檔</button>
+      <button class="btn primary" id="playBtn" disabled>播放</button>
+      <div class="timer mono"><span id="cur">00:00.0</span> <small id="dur">/ 00:00</small></div>
+    </div>
+    <input type="range" class="seek" id="seek" min="0" max="100" step="0.1" value="0" disabled>
+    <div class="filehint" id="fileHint">未載入音樂。音檔只在本次開啟中使用,不會上傳到任何地方。</div>
+  </div>
+
+  <!-- members -->
+  <div>
+    <h2>成員(點擊頭像更換照片,點擊名字改名)</h2>
+    <div class="members" id="members"></div>
+  </div>
+
+  <!-- bars -->
+  <div>
+    <h2>累計演唱時間</h2>
+    <div class="bars" id="bars"></div>
+  </div>
+
+  <!-- segments -->
+  <div class="seg-panel">
+    <h2>段落分配</h2>
+    <div class="quick">
+      <select id="quickMember"></select>
+      <button class="btn" id="markBtn" disabled>▶ 由此刻開始標記</button>
+      <span class="filehint" id="markState"></span>
+    </div>
+    <table>
+      <thead><tr><th>成員</th><th>開始</th><th>結束</th><th></th><th></th></tr></thead>
+      <tbody id="segBody"></tbody>
+    </table>
+    <div class="hint">
+      標記方式一:播放音樂,聽到某人開口時按「由此刻開始標記」,唱完再按一次結束。<br>
+      標記方式二:直接在表格輸入時間(格式 分:秒.一位小數,例如 1:23.5),或按「取now」填入當前播放位置。
+    </div>
+  </div>
+</div>
+
+<audio id="audio"></audio>
+
+<script>
+/* ================= data ================= */
+const N = 7;
+const COLORS = ['#e53935','#fb8c00','#fdd835','#43a047','#1e88e5','#8e24aa','#26c6da'];
+
+const store = {
+  ok: (()=>{ try{ localStorage.setItem('_t','1'); localStorage.removeItem('_t'); return true; }catch(e){ return false; } })(),
+  load(){ if(!this.ok) return null; try{ return JSON.parse(localStorage.getItem('lineDist1')); }catch(e){ return null; } },
+  save(d){ if(!this.ok) return; try{ localStorage.setItem('lineDist1', JSON.stringify(d)); }catch(e){ alert('儲存空間不足,照片可能未能保存。'); } }
+};
+
+let data = store.load() || {
+  members: Array.from({length:N},(_,i)=>({ name:`成員 ${i+1}`, img:null })),
+  segments: []   // {m:成員index, s:開始秒, e:結束秒}
+};
+function persist(){ store.save(data); }
+
+/* ================= helpers ================= */
+const p = n => String(n).padStart(2,'0');
+const fmtT = s => `${p(Math.floor(s/60))}:${p(Math.floor(s%60))}.${Math.floor(s*10%10)}`;
+const fmtD = s => `${p(Math.floor(s/60))}:${p(Math.floor(s%60))}`;
+const esc = s => s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function parseT(str){
+  const m = String(str).trim().match(/^(?:(\d+):)?(\d+(?:\.\d+)?)$/);
+  if(!m) return null;
+  return (+(m[1]||0))*60 + (+m[2]);
+}
+/* 某成員到時刻 t 為止的累計秒數 */
+function sungUpTo(mi, t){
+  let sum = 0;
+  for(const g of data.segments){
+    if(g.m!==mi) continue;
+    sum += Math.max(0, Math.min(g.e, t) - g.s);
+  }
+  return sum;
+}
+function totalOf(mi){ return sungUpTo(mi, Infinity); }
+function isActive(mi, t){
+  return data.segments.some(g=>g.m===mi && t>=g.s && t<g.e);
+}
+
+/* ================= audio ================= */
+const audio = document.getElementById('audio');
+const playBtn = document.getElementById('playBtn');
+const seek = document.getElementById('seek');
+let audioReady = false;
+
+document.getElementById('loadBtn').onclick = ()=>{
+  audioInput.value=''; audioInput.click();
+};
+const audioInput = document.createElement('input');
+audioInput.type='file'; audioInput.accept='audio/*'; audioInput.style.display='none';
+document.body.appendChild(audioInput);
+audioInput.addEventListener('change', ()=>{
+  const f = audioInput.files[0]; if(!f) return;
+  audio.src = URL.createObjectURL(f);
+  document.getElementById('fileHint').textContent = `已載入:${f.name}`;
+});
+audio.addEventListener('loadedmetadata', ()=>{
+  audioReady = true;
+  playBtn.disabled = false; seek.disabled = false;
+  document.getElementById('markBtn').disabled = false;
+  seek.max = audio.duration;
+  document.getElementById('dur').textContent = '/ '+fmtD(audio.duration);
+});
+playBtn.onclick = ()=>{
+  if(audio.paused){ audio.play(); playBtn.textContent='暫停'; }
+  else { audio.pause(); playBtn.textContent='播放'; }
+};
+audio.addEventListener('ended', ()=>{ playBtn.textContent='播放'; });
+seek.addEventListener('input', ()=>{ audio.currentTime = +seek.value; });
+
+/* ================= members UI ================= */
+const membersEl = document.getElementById('members');
+function renderMembers(){
+  membersEl.innerHTML = '';
+  data.members.forEach((m,i)=>{
+    const d = document.createElement('div');
+    d.className='member'; d.dataset.i=i;
+    d.style.setProperty('--c', COLORS[i]);
+    d.innerHTML = `
+      <div class="avatar">${m.img?`<img src="${m.img}" alt="">`:'♪'}</div>
+      <div class="mname">${esc(m.name)}</div>`;
+    d.querySelector('.avatar').onclick = ()=>{ photoTarget=i; photoInput.value=''; photoInput.click(); };
+    d.querySelector('.mname').onclick = ()=>{
+      const nn = prompt('成員名稱:', m.name);
+      if(nn && nn.trim()){ m.name=nn.trim(); persist(); renderMembers(); renderBars(); renderSegs(); }
+    };
+    membersEl.appendChild(d);
+  });
+}
+/* 照片:固定 input + 置中裁成正方形 */
+const photoInput = document.createElement('input');
+photoInput.type='file'; photoInput.accept='image/*'; photoInput.style.display='none';
+document.body.appendChild(photoInput);
+let photoTarget=null;
+photoInput.addEventListener('change', ()=>{
+  const f=photoInput.files[0]; if(f==null||photoTarget==null) return;
+  const url=URL.createObjectURL(f);
+  const img=new Image();
+  img.onload=()=>{
+    const S=240, side=Math.min(img.width,img.height);
+    const cv=document.createElement('canvas'); cv.width=S; cv.height=S;
+    cv.getContext('2d').drawImage(img,(img.width-side)/2,(img.height-side)/2,side,side,0,0,S,S);
+    data.members[photoTarget].img = cv.toDataURL('image/jpeg',.8);
+    URL.revokeObjectURL(url);
+    persist(); renderMembers();
+  };
+  img.src=url;
+});
+
+/* ================= bars UI ================= */
+const barsEl = document.getElementById('bars');
+function renderBars(){
+  barsEl.innerHTML='';
+  data.members.forEach((m,i)=>{
+    const r=document.createElement('div');
+    r.className='barrow'; r.dataset.i=i;
+    r.style.setProperty('--c', COLORS[i]);
+    r.innerHTML=`
+      <div class="bname">${esc(m.name)}</div>
+      <div class="track"><div class="fill"></div></div>
+      <div class="bval mono">0.0s</div>`;
+    barsEl.appendChild(r);
+  });
+}
+
+/* ================= live update ================= */
+function frame(){
+  const t = audio.currentTime || 0;
+  document.getElementById('cur').textContent = fmtT(t);
+  if(audioReady && !seek.matches(':active')) seek.value = t;
+
+  const maxTotal = Math.max(1, ...data.members.map((_,i)=>totalOf(i)));
+  document.querySelectorAll('.barrow').forEach(r=>{
+    const i=+r.dataset.i;
+    const v=sungUpTo(i,t);
+    r.querySelector('.fill').style.width = (v/maxTotal*100)+'%';
+    r.querySelector('.bval').textContent = v.toFixed(1)+'s';
+    r.classList.toggle('active', isActive(i,t));
+  });
+  document.querySelectorAll('.member').forEach(d=>{
+    d.classList.toggle('active', isActive(+d.dataset.i, t));
+  });
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+/* ================= segment editor ================= */
+const segBody = document.getElementById('segBody');
+const quickMember = document.getElementById('quickMember');
+const markBtn = document.getElementById('markBtn');
+const markState = document.getElementById('markState');
+let marking = null; // {m, s}
+
+function renderQuickSelect(){
+  quickMember.innerHTML = data.members.map((m,i)=>
+    `<option value="${i}">${esc(m.name)}</option>`).join('');
+}
+markBtn.onclick = ()=>{
+  const t = audio.currentTime;
+  if(!marking){
+    marking = { m:+quickMember.value, s:t };
+    markBtn.textContent = '■ 結束標記';
+    markState.textContent = `${data.members[marking.m].name} 由 ${fmtT(t)} 開始…`;
+  } else {
+    if(t > marking.s + 0.2){
+      data.segments.push({ m:marking.m, s:+marking.s.toFixed(1), e:+t.toFixed(1) });
+      data.segments.sort((a,b)=>a.s-b.s);
+      persist(); renderSegs();
+    }
+    marking = null;
+    markBtn.textContent = '▶ 由此刻開始標記';
+    markState.textContent = '';
+  }
+};
+
+function renderSegs(){
+  segBody.innerHTML = '';
+  data.segments.forEach((g,gi)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>
+        <span class="dot" style="background:${COLORS[g.m]}"></span>
+        <select data-f="m">${data.members.map((m,i)=>
+          `<option value="${i}" ${i===g.m?'selected':''}>${esc(m.name)}</option>`).join('')}</select>
+      </td>
+      <td><input type="text" class="mono" value="${fmtT(g.s)}" data-f="s">
+          <button class="tbtn" data-f="nows">取now</button></td>
+      <td><input type="text" class="mono" value="${fmtT(g.e)}" data-f="e">
+          <button class="tbtn" data-f="nowe">取now</button></td>
+      <td class="mono" style="color:var(--muted)">${(g.e-g.s).toFixed(1)}s</td>
+      <td><button class="tbtn" data-f="del">刪除</button></td>`;
+    tr.querySelector('[data-f=m]').onchange = e=>{ g.m=+e.target.value; persist(); renderSegs(); };
+    tr.querySelector('[data-f=s]').onchange = e=>{
+      const v=parseT(e.target.value); if(v!=null && v<g.e){ g.s=v; persist(); } renderSegs(); };
+    tr.querySelector('[data-f=e]').onchange = e=>{
+      const v=parseT(e.target.value); if(v!=null && v>g.s){ g.e=v; persist(); } renderSegs(); };
+    tr.querySelector('[data-f=nows]').onclick = ()=>{
+      const t=+audio.currentTime.toFixed(1); if(t<g.e){ g.s=t; persist(); renderSegs(); } };
+    tr.querySelector('[data-f=nowe]').onclick = ()=>{
+      const t=+audio.currentTime.toFixed(1); if(t>g.s){ g.e=t; persist(); renderSegs(); } };
+    tr.querySelector('[data-f=del]').onclick = ()=>{
+      data.segments.splice(gi,1); persist(); renderSegs(); };
+    segBody.appendChild(tr);
+  });
+  /* 手動新增一行 */
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td colspan="5"><button class="tbtn" id="addSeg">＋ 手動新增段落</button></td>`;
+  tr.querySelector('#addSeg').onclick = ()=>{
+    const t=+(audio.currentTime||0).toFixed(1);
+    data.segments.push({m:+quickMember.value, s:t, e:t+5});
+    persist(); renderSegs();
+  };
+  segBody.appendChild(tr);
+}
+
+/* ================= init ================= */
+renderMembers(); renderBars(); renderQuickSelect(); renderSegs();
+</script>
+</body>
+</html>
