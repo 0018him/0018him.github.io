@@ -174,6 +174,7 @@ let perfHome=null;
 document.getElementById('perfBtn').onclick=()=>{
   const blocks=[document.getElementById('playerPanel'),
                 document.getElementById('stageBlock'),
+                document.getElementById('lyricBlock'),
                 document.getElementById('barsBlock')];
   perfHome=blocks.map(b=>({b, parent:b.parentNode, next:b.nextSibling}));
   blocks.forEach(b=>perfInner.appendChild(b));
@@ -240,7 +241,7 @@ document.getElementById('scApply').onclick=()=>{
   const off=d-a;
   const src=data.segments.filter(g=> g.s>=a-1e-6 && g.s<=b+1e-6);
   if(!src.length){ alert('該時間範圍內沒有段落。'); return; }
-  src.forEach(g=> data.segments.push({m:g.m, s:+(g.s+off).toFixed(1), e:+(g.e+off).toFixed(1)}));
+  src.forEach(g=> data.segments.push({m:g.m, s:+(g.s+off).toFixed(1), e:+(g.e+off).toFixed(1), lyric:g.lyric||''}));
   data.segments.sort((x,y)=>x.s-y.s);
   persist(); renderSegs();
 };

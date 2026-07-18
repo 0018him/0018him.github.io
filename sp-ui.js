@@ -92,16 +92,22 @@ memOverlay.addEventListener('click',e=>{ if(e.target===memOverlay) memOverlay.cl
 const barsEl=document.getElementById('bars');
 function renderBars(){
   barsEl.innerHTML='';
+  barsEl.style.height=(N()*31-9)+'px';
   data.members.forEach((m,i)=>{
     const r=document.createElement('div');
-    r.className='barrow'; r.dataset.i=i;
+    r.className='barrow'; r.dataset.i=i; r.dataset.rank=i;
     r.style.setProperty('--c',m.color);
+    r.style.top=(i*31)+'px';
     r.innerHTML=`<div class="bname">${esc(m.name)}</div>
       <div class="track"><div class="fill"></div></div>
       <div class="bval mono">0.0s</div>`;
     barsEl.appendChild(r);
   });
+  document.getElementById('rankBtn').textContent='排名模式:'+(data.rankMode?'開':'關');
 }
+document.getElementById('rankBtn').onclick=()=>{
+  data.rankMode=!data.rankMode; persist(); renderBars();
+};
 
 /* ================= photo stage(偽3D 顯示器) ================= */
 const stageCells=document.getElementById('stageCells');
@@ -298,7 +304,9 @@ function renderForm(){
         <select data-f="m">${data.members.map((m,i)=>
           `<option value="${i}" ${i===f.m?'selected':''}>${esc(m.name)}</option>`).join('')}</select></td>
       <td><input type="text" class="mono" value="${fmtT(f.t)}" data-f="t">
-          <button class="tbtn" data-f="now">取now</button></td>
+          <button class="tbtn" data-f="now">取now</button>
+          <button class="tbtn" data-f="tm">−.1</button>
+          <button class="tbtn" data-f="tp">＋.1</button></td>
       <td><select data-f="col">${Array.from({length:COLS},(_,s)=>
           `<option value="${s}" ${s===f.col?'selected':''}>第 ${s+1} 格</option>`).join('')}</select></td>
       <td><select data-f="row">${Array.from({length:ROWS},(_,r)=>
@@ -310,6 +318,12 @@ function renderForm(){
         data.formations.sort((a,b)=>a.t-b.t); persist(); renderTicks(); forceRefreshPositions(); } renderForm(); };
     tr.querySelector('[data-f=now]').onclick=()=>{
       f.t=nowT();
+      data.formations.sort((a,b)=>a.t-b.t); persist(); renderForm(); renderTicks(); forceRefreshPositions(); };
+    tr.querySelector('[data-f=tm]').onclick=()=>{
+      f.t=Math.max(0,+(f.t-0.1).toFixed(1));
+      data.formations.sort((a,b)=>a.t-b.t); persist(); renderForm(); renderTicks(); forceRefreshPositions(); };
+    tr.querySelector('[data-f=tp]').onclick=()=>{
+      f.t=+(f.t+0.1).toFixed(1);
       data.formations.sort((a,b)=>a.t-b.t); persist(); renderForm(); renderTicks(); forceRefreshPositions(); };
     tr.querySelector('[data-f=col]').onchange=e=>{ f.col=+e.target.value; persist(); forceRefreshPositions(); };
     tr.querySelector('[data-f=row]').onchange=e=>{ f.row=+e.target.value; persist(); forceRefreshPositions(); };
@@ -330,17 +344,30 @@ function renderForm(){
 }
 
 /* ================= live loop ================= */
+let lastLyricHTML=null;
 function frame(){
   const t=media.currentTime||0;
   document.getElementById('cur').textContent=fmtT(t);
   if(mediaReady && !seek.matches(':active')) seek.value=t;
   const maxTotal=Math.max(1,...data.members.map((_,i)=>totalOf(i)));
+  const vals=data.members.map((_,i)=>sungUpTo(i,t));
+  const order=data.members.map((_,i)=>i);
+  if(data.rankMode) order.sort((a,b)=> vals[b]-vals[a] || a-b);
   document.querySelectorAll('.barrow').forEach(r=>{
-    const i=+r.dataset.i, v=sungUpTo(i,t);
+    const i=+r.dataset.i, v=vals[i];
     r.querySelector('.fill').style.width=(v/maxTotal*100)+'%';
     r.querySelector('.bval').textContent=v.toFixed(1)+'s';
     r.classList.toggle('active',isActive(i,t));
+    const rank=order.indexOf(i);
+    if(+r.dataset.rank!==rank){ r.style.top=(rank*31)+'px'; r.dataset.rank=rank; }
   });
+  /* 歌詞:現在唱的(成員色)+ 下一句(半透明) */
+  const nowLy=data.segments.filter(g=>t>=g.s && t<g.e && g.lyric);
+  const nextSeg=data.segments.find(g=>g.s>t && g.lyric);
+  let ly=nowLy.map(g=>
+    `<div class="lyric-now" style="color:${data.members[g.m].color}">${esc(g.lyric)}</div>`).join('');
+  if(nextSeg) ly+=`<div class="lyric-next" style="color:${data.members[nextSeg.m].color}">${esc(nextSeg.lyric)}</div>`;
+  if(ly!==lastLyricHTML){ document.getElementById('lyricBox').innerHTML=ly; lastLyricHTML=ly; }
   document.querySelectorAll('.member').forEach(d=>
     d.classList.toggle('active',isActive(+d.dataset.i,t)));
   updateStageAndTopview(t);
@@ -387,9 +414,11 @@ function renderSegs(){
           <button class="tbtn" data-f="nows">取now</button></td>
       <td><input type="text" class="mono" value="${fmtT(g.e)}" data-f="e">
           <button class="tbtn" data-f="nowe">取now</button></td>
+      <td><input type="text" value="${esc(g.lyric||'')}" data-f="ly" placeholder="歌詞" style="width:130px"></td>
       <td class="mono" style="color:var(--muted)">${(g.e-g.s).toFixed(1)}s</td>
       <td><button class="tbtn" data-f="del">刪除</button></td>`;
     tr.querySelector('[data-f=m]').onchange=e=>{ g.m=+e.target.value; persist(); renderSegs(); };
+    tr.querySelector('[data-f=ly]').onchange=e=>{ g.lyric=e.target.value; persist(); };
     tr.querySelector('[data-f=s]').onchange=e=>{
       const v=parseT(e.target.value); if(v!=null&&v<g.e){ g.s=v; persist(); } renderSegs(); };
     tr.querySelector('[data-f=e]').onchange=e=>{
@@ -403,7 +432,7 @@ function renderSegs(){
     segBody.appendChild(tr);
   });
   const tr=document.createElement('tr');
-  tr.innerHTML=`<td colspan="5"><button class="tbtn" id="addSeg">＋ 手動新增段落</button></td>`;
+  tr.innerHTML=`<td colspan="6"><button class="tbtn" id="addSeg">＋ 手動新增段落</button></td>`;
   tr.querySelector('#addSeg').onclick=()=>{
     const t=+(media.currentTime||0).toFixed(1);
     data.segments.push({m:+quickMember.value,s:t,e:t+5});

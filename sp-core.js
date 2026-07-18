@@ -25,8 +25,9 @@ let data = safeGet('lineDist2') || {
 function normalizeData(d){
   d.formations = (d.formations||[]).map(f=>
     f.col!=null ? f : {t:f.t, m:f.m, col:f.slot??0, row:ROWS-1});
-  d.segments = d.segments||[];
+  d.segments = (d.segments||[]).map(g=>({lyric:'',...g}));
   d.theme = d.theme||{bg:'#1b1d22',img:null};
+  if(d.rankMode===undefined) d.rankMode=true;
   d.members = (d.members||[]).slice(0,MAX_N);
   d.members.forEach((m,i)=>{ m.color = m.color||PALETTE[i%14]; });
   d.segments = d.segments.filter(g=>g.m<d.members.length);

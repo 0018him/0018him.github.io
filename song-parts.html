@@ -57,8 +57,16 @@
     </div>
 
     <div id="barsBlock">
-      <h2>累計演唱時間</h2>
+      <div class="members-head">
+        <h2 style="margin:0">累計演唱時間</h2>
+        <button class="btn small" id="rankBtn">排名模式:開</button>
+      </div>
       <div class="bars" id="bars"></div>
+    </div>
+
+    <div id="lyricBlock">
+      <h2>歌詞</h2>
+      <div class="panel lyricbox" id="lyricBox"></div>
     </div>
 
     <div class="panel">
@@ -69,7 +77,7 @@
         <span class="filehint" id="markState"></span>
       </div>
       <table>
-        <thead><tr><th>成員</th><th>開始</th><th>結束</th><th></th><th></th></tr></thead>
+        <thead><tr><th>成員</th><th>開始</th><th>結束</th><th>歌詞</th><th></th><th></th></tr></thead>
         <tbody id="segBody"></tbody>
       </table>
       <div class="quick" style="margin:12px 0 0">
