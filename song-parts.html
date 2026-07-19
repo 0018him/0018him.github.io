@@ -41,6 +41,11 @@
     </div>
     <input type="range" class="seek" id="seek" min="0" max="100" step="0.1" value="0" disabled>
     <div class="ticks" id="ticks"></div>
+    <div class="row">
+      <select id="quickMember"></select>
+      <button class="btn" id="markBtn" disabled>▶ 由此刻開始標記</button>
+      <span class="filehint" id="markState"></span>
+    </div>
     <div class="filehint" id="fileHint">支援 mp3 等音檔及 mp4 等影片。音檔會隨「儲存歌曲」一併保存在此裝置。</div>
   </div>
 
@@ -89,11 +94,6 @@
     <div class="panel collapsible" data-ckey="seg">
       <div class="chead"><h2>段落分配</h2><button class="tbtn ctoggle">收起</button></div>
       <div class="cbody">
-      <div class="quick">
-        <select id="quickMember"></select>
-        <button class="btn" id="markBtn" disabled>▶ 由此刻開始標記</button>
-        <span class="filehint" id="markState"></span>
-      </div>
       <table>
         <thead><tr><th>成員</th><th>開始</th><th>結束</th><th>歌詞</th><th></th><th></th></tr></thead>
         <tbody id="segBody"></tbody>
@@ -106,8 +106,8 @@
         <button class="tbtn" id="scApply">套用</button>
       </div>
       <div class="hint">
-        方式一:播放時聽到某人開口,按「由此刻開始標記」,唱完再按一次結束。<br>
-        方式二:表格直接輸入時間(格式 分:秒.一位小數,如 1:23.5),或按「取now」抓當前播放位置。
+        標記按鈕在上方播放器內:選擇成員後按「由此刻開始標記」,唱完再按一次結束。<br>
+        亦可在表格直接輸入時間(格式 分:秒.一位小數,如 1:23.5),或按「取now」抓當前播放位置。
       </div>
       </div>
     </div>
@@ -124,18 +124,18 @@
     </div>
 
     <div class="panel collapsible" data-ckey="tv">
-      <div class="chead"><h2>俯視站位圖</h2><button class="tbtn ctoggle">收起</button></div>
+      <div class="chead"><h2>俯視站位圖</h2>
+        <div style="display:flex; gap:6px;">
+          <button class="tbtn" id="multiBtn">選擇</button>
+          <button class="tbtn ctoggle">收起</button>
+        </div>
+      </div>
       <div class="cbody">
       <div class="topview" id="topview">
         <div class="tv-cells" id="tvCells"></div>
         <div class="tv-people" id="tvPeople"></div>
       </div>
       <div class="audience">▼ 觀 眾 席 ▼</div>
-      <div class="hint">
-        操作方式一(拖曳):按住色條直接拖到目標格。<br>
-        操作方式二(點選):點一下色條選中(會加粗),再點目標格放置。<br>
-        拖/放到已有人的格會自動<b>交換位置</b>。橫向=左右站位;縱向=前後深度,越近觀眾席越前。
-      </div>
       </div>
     </div>
 
@@ -215,6 +215,20 @@
       </div>
     </div>
     <button class="btn" id="themeClose">完成</button>
+  </div>
+</div>
+
+<!-- crop -->
+<div class="overlay" id="cropOverlay">
+  <div class="sheet">
+    <h3>剪裁圖片</h3>
+    <div class="crop-frame" id="cropFrame"><img id="cropImg" alt=""></div>
+    <div><label>縮放</label><input type="range" class="crop-zoom" id="cropZoom"></div>
+    <div class="hint" style="margin:0">拖曳圖片調整位置</div>
+    <div class="row">
+      <button class="btn" id="cropCancel">取消</button>
+      <button class="btn" id="cropOk" style="background:var(--text);color:var(--bg);font-weight:700;">確定</button>
+    </div>
   </div>
 </div>
 

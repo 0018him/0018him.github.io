@@ -168,3 +168,79 @@ function makeInput(accept,onFile){
   inp.addEventListener('change',()=>{ if(inp.files[0]) onFile(inp.files[0]); });
   return inp;
 }
+
+/* ================= 通用圖片剪裁 ================= */
+const cropOverlay=document.getElementById('cropOverlay');
+const cropFrame=document.getElementById('cropFrame');
+const cropImgEl=document.getElementById('cropImg');
+const cropZoom=document.getElementById('cropZoom');
+let crop=null;
+function openCrop(file, ratio, outLong, cb, quality){
+  const url=URL.createObjectURL(file);
+  const img=new Image();
+  img.onload=()=>{
+    const maxW=Math.min(320, window.innerWidth*0.94-40);
+    const maxH=Math.min(380, window.innerHeight*0.55);
+    let FW,FH;
+    if(maxW/ratio<=maxH){ FW=maxW; FH=maxW/ratio; } else { FH=maxH; FW=maxH*ratio; }
+    cropFrame.style.width=FW+'px'; cropFrame.style.height=FH+'px';
+    cropOverlay.classList.add('open');
+    const min=Math.max(FW/img.width, FH/img.height);
+    crop={img,url,cb,ratio,outLong,FW,FH,min,scale:min,quality:quality||.8,
+      x:(FW-img.width*min)/2, y:(FH-img.height*min)/2};
+    cropImgEl.src=url;
+    cropZoom.min=min; cropZoom.max=min*4; cropZoom.step=min/100; cropZoom.value=min;
+    applyCropView();
+  };
+  img.src=url;
+}
+function clampCropView(){
+  crop.x=Math.min(0, Math.max(crop.FW-crop.img.width*crop.scale, crop.x));
+  crop.y=Math.min(0, Math.max(crop.FH-crop.img.height*crop.scale, crop.y));
+}
+function applyCropView(){
+  clampCropView();
+  cropImgEl.style.width=crop.img.width+'px';
+  cropImgEl.style.transform=`translate(${crop.x}px,${crop.y}px) scale(${crop.scale})`;
+}
+cropZoom.addEventListener('input',()=>{
+  if(!crop) return;
+  const ns=+cropZoom.value;
+  const cx=(crop.FW/2-crop.x)/crop.scale, cy=(crop.FH/2-crop.y)/crop.scale;
+  crop.scale=ns;
+  crop.x=crop.FW/2-cx*ns; crop.y=crop.FH/2-cy*ns;
+  applyCropView();
+});
+let cropPan=null;
+cropFrame.addEventListener('pointerdown',e=>{
+  cropPan={x:e.clientX,y:e.clientY};
+  cropFrame.setPointerCapture(e.pointerId);
+});
+cropFrame.addEventListener('pointermove',e=>{
+  if(!cropPan||!crop) return;
+  crop.x+=e.clientX-cropPan.x; crop.y+=e.clientY-cropPan.y;
+  cropPan={x:e.clientX,y:e.clientY};
+  applyCropView();
+});
+cropFrame.addEventListener('pointerup',()=>cropPan=null);
+cropFrame.addEventListener('pointercancel',()=>cropPan=null);
+function closeCrop(){
+  cropOverlay.classList.remove('open');
+  if(crop){ URL.revokeObjectURL(crop.url); crop=null; }
+}
+document.getElementById('cropCancel').onclick=closeCrop;
+document.getElementById('cropOk').onclick=()=>{
+  if(!crop) return;
+  const r=crop.ratio;
+  const outW=r>=1?crop.outLong:Math.round(crop.outLong*r);
+  const outH=r>=1?Math.round(crop.outLong/r):crop.outLong;
+  const cv=document.createElement('canvas');
+  cv.width=outW; cv.height=outH;
+  const sx=-crop.x/crop.scale, sy=-crop.y/crop.scale;
+  const sw=crop.FW/crop.scale, sh=crop.FH/crop.scale;
+  cv.getContext('2d').drawImage(crop.img,sx,sy,sw,sh,0,0,outW,outH);
+  const out=cv.toDataURL('image/jpeg',crop.quality);
+  const cb=crop.cb;
+  closeCrop();
+  cb(out);
+};

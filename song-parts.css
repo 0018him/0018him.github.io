@@ -16,7 +16,17 @@
     background-size:cover; background-position:center;
     filter:blur(26px) brightness(.75); transform:scale(1.08);}
   #bgLayer .bgfit{position:absolute; inset:0;
-    background-size:contain; background-position:center; background-repeat:no-repeat;}
+    background-size:contain; background-position:center; background-repeat:no-repeat;
+    -webkit-mask-image:linear-gradient(to right,transparent,#000 8%,#000 92%,transparent),
+                       linear-gradient(to bottom,transparent,#000 8%,#000 92%,transparent);
+    mask-image:linear-gradient(to right,transparent,#000 8%,#000 92%,transparent),
+               linear-gradient(to bottom,transparent,#000 8%,#000 92%,transparent);
+    -webkit-mask-composite:source-in;
+    mask-composite:intersect;}
+
+  /* 置頂播放器(表演模式除外) */
+  #playerPanel{position:sticky; top:8px; z-index:60;}
+  .perfscreen #playerPanel{position:static;}
   body.has-bgimg::before{content:''; position:fixed; inset:0; background:rgba(15,16,20,.45); z-index:-1;}
   .wrap{max-width:860px; margin:0 auto; display:flex; flex-direction:column; gap:20px;}
   .head{display:flex; justify-content:space-between; align-items:center;}
@@ -98,10 +108,10 @@
   .barrow.active .bval{color:var(--text);}
 
   /* photo stage (偽3D) */
-  .stage-wrap{position:relative; padding-top:52px;}
+  .stage-wrap{position:relative; padding-top:84px;}
   .stage-cells{display:grid; grid-template-columns:repeat(7,1fr); gap:6px;}
   .scell{aspect-ratio:3/4; border-radius:10px; border:1.5px dashed rgba(127,127,127,.3);}
-  .stage-people{position:absolute; left:0; right:0; bottom:0; top:52px; pointer-events:none;}
+  .stage-people{position:absolute; left:0; right:0; bottom:0; top:84px; pointer-events:none;}
   .sm{position:absolute; top:0; height:100%;
     width:calc((100% - 36px)/7);
     transform-origin:50% 100%;
@@ -130,13 +140,21 @@
     pointer-events:auto; cursor:grab;
     display:flex; align-items:center; justify-content:center;
     transition:left .4s ease, top .4s ease;}
-  .tvm .tbar{width:86%; height:5px; border-radius:3px; background:var(--c);
-    border:1px solid rgba(0,0,0,.25); transition:height .15s, box-shadow .15s;}
-  .tvm.active .tbar{height:7px; box-shadow:0 0 8px var(--c);}
-  .tvm.sel .tbar{height:9px; box-shadow:0 0 0 2px var(--text), 0 0 10px var(--c);}
+  .tvm .tbar{height:20px; aspect-ratio:4/3; border-radius:5px; background:var(--c);
+    border:1px solid rgba(0,0,0,.3); transition:box-shadow .15s, transform .15s;}
+  .tvm.active .tbar{box-shadow:0 0 10px var(--c); transform:scale(1.08);}
+  .tvm.sel .tbar{box-shadow:0 0 0 2px var(--text), 0 0 10px var(--c);}
+  .tvm.msel .tbar{outline:2px dashed var(--text); outline-offset:1px;}
   .tvm.dragging{opacity:.3;}
   .tvghost{position:fixed; z-index:999; pointer-events:none; opacity:.95;
-    height:7px; border-radius:3px; box-shadow:0 4px 14px rgba(0,0,0,.55);}
+    border-radius:5px; box-shadow:0 4px 14px rgba(0,0,0,.55);}
+  .tbtn.on{color:var(--text); border-color:var(--text); background:rgba(127,127,127,.15);}
+
+  /* 通用剪裁 */
+  .crop-frame{margin:0 auto; border-radius:12px; overflow:hidden; position:relative;
+    background:#000; border:1px solid var(--line); touch-action:none; cursor:grab;}
+  .crop-frame img{position:absolute; left:0; top:0; transform-origin:0 0; max-width:none; pointer-events:none;}
+  .crop-zoom{width:100%;}
   .audience{text-align:center; font-size:.68rem; color:var(--muted);
     letter-spacing:.4em; margin-top:8px;}
 

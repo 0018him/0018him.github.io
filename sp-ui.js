@@ -40,20 +40,12 @@ document.getElementById('memMinus').onclick=()=>{
 
 let photoTarget=null;
 const photoInput=makeInput('image/*', f=>{
-  const url=URL.createObjectURL(f);
-  const img=new Image();
-  img.onload=()=>{
-    const W=240,H=320,R=3/4;
-    let sw,sh;
-    if(img.width/img.height>R){ sh=img.height; sw=sh*R; } else { sw=img.width; sh=sw/R; }
-    const cv=document.createElement('canvas'); cv.width=W; cv.height=H;
-    cv.getContext('2d').drawImage(img,(img.width-sw)/2,(img.height-sh)/2,sw,sh,0,0,W,H);
-    data.members[photoTarget].img=cv.toDataURL('image/jpeg',.8);
-    URL.revokeObjectURL(url);
+  openCrop(f, 3/4, 320, dataUrl=>{
+    if(photoTarget==null) return;
+    data.members[photoTarget].img=dataUrl;
     persist(); renderAll();
-    if(photoTarget!=null) openMember(photoTarget);
-  };
-  img.src=url;
+    openMember(photoTarget);
+  }, .8);
 });
 
 const memOverlay=document.getElementById('memOverlay');
@@ -154,6 +146,7 @@ function renderTopview(){
     el.innerHTML='<div class="tbar"></div>';
     tvPeople.appendChild(el);
   });
+  updateMultiVisual();
 }
 function forceRefreshPositions(){
   stagePeople.querySelectorAll('.sm').forEach(el=>el.dataset.key='');
@@ -175,7 +168,7 @@ function updateStageAndTopview(t){
     const key=col+'-'+row;
     if(el.dataset.key!==key){
       el.style.left=colLeft(col);
-      el.style.transform=`translateY(${-8*d}px) scale(${(1-0.04*d).toFixed(3)})`;
+      el.style.transform=`translateY(${-13*d}px) scale(${(1-0.04*d).toFixed(3)})`;
       el.style.filter=`brightness(${(1-0.05*d).toFixed(2)})`;
       el.dataset.key=key;
     }
@@ -185,11 +178,11 @@ function updateStageAndTopview(t){
   tvPeople.querySelectorAll('.tvm').forEach(el=>{
     const i=+el.dataset.i, {col,row}=poses[i];
     const grp=groups[col+'-'+row], gi=grp.indexOf(i);
-    const off=(gi-(grp.length-1)/2)*7;
+    const off=(gi-(grp.length-1)/2)*9;
     const key=col+'-'+row+'-'+gi;
     if(el.dataset.pos!==key){
-      el.style.left=colLeft(col);
-      el.style.top=(row*(TV_ROW_H+TV_GAP)+off)+'px';
+      el.style.left=`calc(${col} * ((100% - 36px) / 7 + 6px) + ${off}px)`;
+      el.style.top=(row*(TV_ROW_H+TV_GAP))+'px';
       el.dataset.pos=key;
     }
     el.style.zIndex=10+row;
@@ -217,6 +210,18 @@ function placeMember(m,col,row){
 
 /* 拖曳(移動超過 6px 先當拖;輕點=選中) + 點選保底 */
 let tvDown=null, tvDrag=null, selM=null;
+let multiMode=false; const multiSel=new Set();
+function updateMultiVisual(){
+  tvPeople.querySelectorAll('.tvm').forEach(el=>
+    el.classList.toggle('msel', multiSel.has(+el.dataset.i)));
+}
+document.getElementById('multiBtn').onclick=()=>{
+  multiMode=!multiMode;
+  const b=document.getElementById('multiBtn');
+  b.classList.toggle('on', multiMode);
+  b.textContent=multiMode?'完成':'選擇';
+  if(!multiMode){ multiSel.clear(); updateMultiVisual(); }
+};
 function updateSelVisual(){
   tvPeople.querySelectorAll('.tvm').forEach(el=>
     el.classList.toggle('sel', +el.dataset.i===selM));
@@ -234,7 +239,8 @@ document.addEventListener('pointermove',e=>{
     const m=data.members[+el.dataset.i];
     const ghost=document.createElement('div');
     ghost.className='tvghost';
-    ghost.style.width=(r.width*.86)+'px';
+    const gh=24, gw=Math.round(gh*4/3);
+    ghost.style.width=gw+'px'; ghost.style.height=gh+'px';
     ghost.style.background=m.color;
     document.body.appendChild(ghost);
     el.classList.add('dragging');
@@ -243,7 +249,7 @@ document.addEventListener('pointermove',e=>{
   }
   if(tvDrag){
     tvDrag.ghost.style.left=(e.clientX-parseFloat(tvDrag.ghost.style.width)/2)+'px';
-    tvDrag.ghost.style.top=(e.clientY-4)+'px';
+    tvDrag.ghost.style.top=(e.clientY-12)+'px';
     tvCells.querySelectorAll('.tv-cell.over').forEach(c=>c.classList.remove('over'));
     const cell=document.elementFromPoint(e.clientX,e.clientY)?.closest('.tv-cell');
     if(cell) cell.classList.add('over');
@@ -252,17 +258,40 @@ document.addEventListener('pointermove',e=>{
 document.addEventListener('pointerup',e=>{
   if(tvDrag){
     const cell=document.elementFromPoint(e.clientX,e.clientY)?.closest('.tv-cell');
-    if(cell) placeMember(+tvDrag.el.dataset.i, +cell.dataset.col, +cell.dataset.row);
+    if(cell){
+      const mi=+tvDrag.el.dataset.i;
+      if(multiMode && multiSel.size>1 && multiSel.has(mi)){
+        /* 集體移動:保持相對位置,整組平移 */
+        const t=nowT();
+        const base=posOf(mi,t);
+        const dc=+cell.dataset.col-base.col, dr=+cell.dataset.row-base.row;
+        multiSel.forEach(m2=>{
+          const q=posOf(m2,t);
+          writeKf(m2,
+            Math.min(COLS-1,Math.max(0,q.col+dc)),
+            Math.min(ROWS-1,Math.max(0,q.row+dr)), t);
+        });
+        data.formations.sort((a,b)=>a.t-b.t);
+        persist(); renderForm(); renderTicks(); forceRefreshPositions();
+      } else {
+        placeMember(mi, +cell.dataset.col, +cell.dataset.row);
+      }
+    }
     tvDrag.ghost.remove();
     tvDrag.el.classList.remove('dragging');
     tvCells.querySelectorAll('.tv-cell.over').forEach(c=>c.classList.remove('over'));
     tvDrag=null; tvDown=null;
     return;
   }
-  if(tvDown){   /* 冇拖過=輕點:切換選中 */
+  if(tvDown){   /* 冇拖過=輕點 */
     const i=+tvDown.el.dataset.i;
-    selM = (selM===i)? null : i;
-    updateSelVisual();
+    if(multiMode){
+      multiSel.has(i)?multiSel.delete(i):multiSel.add(i);
+      updateMultiVisual();
+    } else {
+      selM = (selM===i)? null : i;
+      updateSelVisual();
+    }
     tvDown=null;
   }
 });
@@ -276,6 +305,7 @@ document.addEventListener('pointercancel',()=>{
 });
 /* 點選保底:選中狀態下點目標格 */
 tvCells.addEventListener('click',e=>{
+  if(multiMode) return;
   if(selM==null) return;
   const cell=e.target.closest('.tv-cell'); if(!cell) return;
   placeMember(selM, +cell.dataset.col, +cell.dataset.row);

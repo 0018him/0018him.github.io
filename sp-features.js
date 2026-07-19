@@ -337,18 +337,10 @@ document.getElementById('themeBtn').onclick=()=>{
   themeOverlay.classList.add('open');
 };
 const bgInput=makeInput('image/*', f=>{
-  const url=URL.createObjectURL(f);
-  const img=new Image();
-  img.onload=()=>{
-    const max=1600, sc=Math.min(1,max/Math.max(img.width,img.height));
-    const cv=document.createElement('canvas');
-    cv.width=img.width*sc; cv.height=img.height*sc;
-    cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
-    data.theme.img=cv.toDataURL('image/jpeg',.72);
-    URL.revokeObjectURL(url);
-    persist(); applyTheme();
-  };
-  img.src=url;
+  const r=window.innerWidth/window.innerHeight;
+  openCrop(f, r, 1600, dataUrl=>{
+    data.theme.img=dataUrl; persist(); applyTheme();
+  }, .72);
 });
 document.getElementById('bgImgBtn').onclick=()=>{ bgInput.value=''; bgInput.click(); };
 document.getElementById('bgImgRm').onclick=()=>{ data.theme.img=null; persist(); applyTheme(); };
