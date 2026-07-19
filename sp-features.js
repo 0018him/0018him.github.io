@@ -1,23 +1,38 @@
 /* song-parts — 功能:儲存庫、播放清單、匯出匯入、表演模式、結算、複製、初始化 */
 /* ================= song library ================= */
 const songList=document.getElementById('songList');
+let currentSongId=null;
 function snapshot(){
   return JSON.parse(JSON.stringify({
-    members:data.members, segments:data.segments, formations:data.formations
+    members:data.members, segments:data.segments, formations:data.formations,
+    theme:{bg:data.theme.bg}
   }));
+}
+async function saveThemeImg(id){
+  try{
+    if(data.theme.img) await idb.put('bg-'+id, data.theme.img);
+    else await idb.del('bg-'+id);
+  }catch(e){}
 }
 document.getElementById('saveNewBtn').onclick=async ()=>{
   const id=Date.now();
   lib.songs.push({ id, name:`歌曲 ${lib.songs.length+1}`, snap:snapshot() });
+  currentSongId=id;
   persistLib(); renderSongs(); renderPlaylist();
+  await saveThemeImg(id);
   if(curBlob){ try{ await idb.put(id, curBlob); }catch(e){ alert('音檔儲存失敗(裝置空間不足?),標註已保存。'); } }
 };
 async function loadSong(id, autoplay){
   const s=lib.songs.find(x=>x.id===id); if(!s) return false;
   const sn=normalizeData(JSON.parse(JSON.stringify(s.snap)));
   data.members=sn.members; data.segments=sn.segments; data.formations=sn.formations;
-  data.theme=data.theme;   /* 外觀為全域設定,不隨歌曲切換 */
-  persist(); renderAll();
+  if(sn.theme && sn.theme.bg) data.theme.bg=sn.theme.bg;
+  try{
+    const bg=await idb.get('bg-'+id);
+    data.theme.img=(typeof bg==='string')?bg:null;
+  }catch(e){ data.theme.img=null; }
+  currentSongId=id;
+  persist(); applyTheme(); renderAll();
   try{
     const blob=await idb.get(id);
     if(blob){ setMediaBlob(blob, s.name+'(儲存庫音檔)', autoplay); return true; }
@@ -44,7 +59,8 @@ function renderSongs(){
     };
     d.querySelector('[data-f=save]').onclick=async ()=>{
       if(!confirm(`用目前內容覆蓋「${s.name}」?`)) return;
-      s.snap=snapshot(); persistLib();
+      s.snap=snapshot(); currentSongId=s.id; persistLib();
+      await saveThemeImg(s.id);
       if(curBlob){ try{ await idb.put(s.id, curBlob); }catch(e){} }
     };
     d.querySelector('[data-f=ren]').onclick=()=>{
@@ -55,8 +71,10 @@ function renderSongs(){
       if(!confirm(`刪除「${s.name}」?此操作無法還原。`)) return;
       lib.songs.splice(si,1);
       lib.playlist.ids=lib.playlist.ids.filter(x=>x!==s.id);
+      if(currentSongId===s.id) currentSongId=null;
       persistLib(); renderSongs(); renderPlaylist();
       idb.del(s.id).catch(()=>{});
+      idb.del('bg-'+s.id).catch(()=>{});
     };
     songList.appendChild(d);
   });
@@ -178,13 +196,12 @@ document.getElementById('perfBtn').onclick=()=>{
                 document.getElementById('barsBlock')];
   perfHome=blocks.map(b=>({b, parent:b.parentNode, next:b.nextSibling}));
   blocks.forEach(b=>perfInner.appendChild(b));
-  const cs=getComputedStyle(document.body);
-  perfScreen.style.backgroundColor=cs.backgroundColor;
-  perfScreen.style.backgroundImage=cs.backgroundImage;
+  document.querySelector('.wrap').style.display='none';
   perfScreen.classList.add('open');
 };
 document.getElementById('perfExit').onclick=()=>{
   perfScreen.classList.remove('open');
+  document.querySelector('.wrap').style.display='';
   if(perfHome) perfHome.forEach(({b,parent,next})=>parent.insertBefore(b,next));
   perfHome=null;
 };
@@ -246,6 +263,66 @@ document.getElementById('scApply').onclick=()=>{
   persist(); renderSegs();
 };
 
+/* ================= 新建方案 ================= */
+const newOverlay=document.getElementById('newOverlay');
+document.getElementById('newPlanBtn').onclick=()=> newOverlay.classList.add('open');
+document.getElementById('npBack').onclick=()=> newOverlay.classList.remove('open');
+newOverlay.addEventListener('click',e=>{ if(e.target===newOverlay) newOverlay.classList.remove('open'); });
+
+async function saveCurrentPlan(){
+  if(currentSongId && lib.songs.some(s=>s.id===currentSongId)){
+    const s=lib.songs.find(x=>x.id===currentSongId);
+    s.snap=snapshot(); persistLib();
+    await saveThemeImg(s.id);
+    if(curBlob){ try{ await idb.put(s.id,curBlob); }catch(e){} }
+  } else {
+    const id=Date.now();
+    lib.songs.push({id, name:`歌曲 ${lib.songs.length+1}`, snap:snapshot()});
+    persistLib(); await saveThemeImg(id);
+    if(curBlob){ try{ await idb.put(id,curBlob); }catch(e){} }
+  }
+  renderSongs(); renderPlaylist();
+}
+function resetPlan(){
+  data.members=Array.from({length:7},(_,i)=>({name:`成員 ${i+1}`,img:null,color:PALETTE[i%14]}));
+  data.segments=[]; data.formations=[];
+  data.theme={bg:'#1b1d22',img:null};
+  currentSongId=null; plPos=null; curBlob=null;
+  media.pause(); media.removeAttribute('src'); media.load();
+  mediaReady=false; playBtn.disabled=true; seek.disabled=true; seek.value=0;
+  document.getElementById('markBtn').disabled=true;
+  playBtn.textContent='播放';
+  document.getElementById('dur').textContent='/ 00:00';
+  document.getElementById('fileHint').textContent='新方案已建立,請選擇音樂/影片檔。';
+  media.classList.remove('show');
+  persist(); applyTheme(); renderAll(); renderTicks(); renderPlaylist();
+}
+document.getElementById('npYes').onclick=async ()=>{
+  newOverlay.classList.remove('open');
+  await saveCurrentPlan(); resetPlan();
+};
+document.getElementById('npNo').onclick=()=>{
+  newOverlay.classList.remove('open'); resetPlan();
+};
+
+/* ================= 摺疊面板 ================= */
+const collapseState=safeGet('spCollapse')||{};
+document.querySelectorAll('.collapsible').forEach(p=>{
+  const key=p.dataset.ckey;
+  if(collapseState[key]!==undefined) p.classList.toggle('closed', collapseState[key]);
+  const btn=p.querySelector('.ctoggle');
+  const sync=()=> btn.textContent=p.classList.contains('closed')?'展開':'收起';
+  sync();
+  btn.onclick=()=>{
+    p.classList.toggle('closed');
+    collapseState[key]=p.classList.contains('closed');
+    safeSet('spCollapse',collapseState);
+    sync();
+  };
+});
+document.getElementById('undoBtn').onclick=undo;
+document.getElementById('redoBtn').onclick=redo;
+
 /* ================= theme UI ================= */
 const themeOverlay=document.getElementById('themeOverlay');
 document.getElementById('themeBtn').onclick=()=>{
@@ -285,3 +362,4 @@ function renderAll(){
   updateSelVisual();
 }
 applyTheme(); renderAll(); renderSongs(); renderPlaylist();
+recordHistory();

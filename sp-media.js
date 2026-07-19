@@ -44,6 +44,11 @@ playBtn.onclick=()=>{
   else { media.pause(); playBtn.textContent='播放'; }
 };
 seek.addEventListener('input',()=>{ media.currentTime=+seek.value; });
+document.querySelectorAll('[data-skip]').forEach(b=> b.onclick=()=>{
+  if(!mediaReady) return;
+  media.currentTime=Math.min(media.duration,
+    Math.max(0, media.currentTime + (+b.dataset.skip)));
+});
 
 /* 播完的行為:由播放清單模式決定 */
 let plPos=null;   // 目前在清單中的位置(null=不在清單播放)

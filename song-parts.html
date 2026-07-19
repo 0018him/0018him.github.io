@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>歌唱分配計時</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@300;500&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="song-parts.css">
+</head>
+<body>
+<div id="bgLayer" aria-hidden="true"><div class="bgblur"></div><div class="bgfit"></div></div>
+<div class="wrap">
+  <div class="head">
+    <h1>歌唱分配計時</h1>
+    <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+      <button class="btn small" id="undoBtn" disabled>↩ 復原</button>
+      <button class="btn small" id="redoBtn" disabled>↪ 重做</button>
+      <button class="btn small" id="statsBtn">結算</button>
+      <button class="btn small" id="perfBtn">表演模式</button>
+      <button class="btn small" id="themeBtn">外觀</button>
+    </div>
+  </div>
+
+  <!-- player -->
+  <div class="panel player" id="playerPanel">
+    <video id="media" playsinline></video>
+    <div class="row">
+      <button class="btn" id="loadBtn">選擇音樂/影片檔</button>
+      <button class="btn primary" id="playBtn" disabled>播放</button>
+      <select id="rateSel" title="播放速度">
+        <option value="0.5">0.5×</option>
+        <option value="0.75">0.75×</option>
+        <option value="1" selected>1×</option>
+      </select>
+      <button class="btn small" data-skip="-10">−10s</button>
+      <button class="btn small" data-skip="-5">−5s</button>
+      <button class="btn small" data-skip="5">＋5s</button>
+      <button class="btn small" data-skip="10">＋10s</button>
+      <div class="timer mono"><span id="cur">00:00.0</span> <small id="dur">/ 00:00</small></div>
+    </div>
+    <input type="range" class="seek" id="seek" min="0" max="100" step="0.1" value="0" disabled>
+    <div class="ticks" id="ticks"></div>
+    <div class="filehint" id="fileHint">支援 mp3 等音檔及 mp4 等影片。音檔會隨「儲存歌曲」一併保存在此裝置。</div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab sel" data-page="1">歌詞分配</div>
+    <div class="tab" data-page="2">站位動線</div>
+  </div>
+
+  <!-- playlist(兩頁共用) -->
+  <div class="panel collapsible closed" data-ckey="pl">
+    <div class="chead"><h2>播放清單</h2><button class="tbtn ctoggle">展開</button></div>
+    <div class="cbody">
+      <div class="plmodes" id="plModes"></div>
+      <div id="plList"></div>
+      <div class="hint">勾選加入清單,▲▼ 調整順序,▶ 由該首開始播放。列表模式下一首播完會自動載入下一首(標註+已儲存的音檔)。</div>
+    </div>
+  </div>
+
+  <!-- ============ page 1 ============ -->
+  <div class="page sel" id="page1">
+    <div>
+      <div class="members-head">
+        <h2>成員(點擊頭像進行設定)</h2>
+        <div class="count">
+          <button class="btn small" id="memMinus">−</button>
+          <span id="memCount" class="mono"></span>
+          <button class="btn small" id="memPlus">＋</button>
+        </div>
+      </div>
+      <div class="members" id="members"></div>
+    </div>
+
+    <div id="barsBlock">
+      <div class="members-head">
+        <h2 style="margin:0">累計演唱時間</h2>
+        <button class="btn small" id="rankBtn">排名模式:開</button>
+      </div>
+      <div class="bars" id="bars"></div>
+    </div>
+
+    <div id="lyricBlock">
+      <h2>歌詞</h2>
+      <div class="panel lyricbox" id="lyricBox"></div>
+    </div>
+
+    <div class="panel collapsible" data-ckey="seg">
+      <div class="chead"><h2>段落分配</h2><button class="tbtn ctoggle">收起</button></div>
+      <div class="cbody">
+      <div class="quick">
+        <select id="quickMember"></select>
+        <button class="btn" id="markBtn" disabled>▶ 由此刻開始標記</button>
+        <span class="filehint" id="markState"></span>
+      </div>
+      <table>
+        <thead><tr><th>成員</th><th>開始</th><th>結束</th><th>歌詞</th><th></th><th></th></tr></thead>
+        <tbody id="segBody"></tbody>
+      </table>
+      <div class="quick" style="margin:12px 0 0">
+        <span class="filehint">複製段落:</span>
+        由 <input type="text" id="scFrom" class="mono" style="width:74px" placeholder="0:00.0">
+        至 <input type="text" id="scTo" class="mono" style="width:74px" placeholder="0:30.0">
+        貼到 <input type="text" id="scDest" class="mono" style="width:74px" placeholder="1:30.0">
+        <button class="tbtn" id="scApply">套用</button>
+      </div>
+      <div class="hint">
+        方式一:播放時聽到某人開口,按「由此刻開始標記」,唱完再按一次結束。<br>
+        方式二:表格直接輸入時間(格式 分:秒.一位小數,如 1:23.5),或按「取now」抓當前播放位置。
+      </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ page 2 ============ -->
+  <div class="page" id="page2">
+    <div id="stageBlock">
+      <h2>舞台畫面</h2>
+      <div class="stage-wrap">
+        <div class="stage-cells" id="stageCells"></div>
+        <div class="stage-people" id="stagePeople"></div>
+      </div>
+    </div>
+
+    <div class="panel collapsible" data-ckey="tv">
+      <div class="chead"><h2>俯視站位圖</h2><button class="tbtn ctoggle">收起</button></div>
+      <div class="cbody">
+      <div class="topview" id="topview">
+        <div class="tv-cells" id="tvCells"></div>
+        <div class="tv-people" id="tvPeople"></div>
+      </div>
+      <div class="audience">▼ 觀 眾 席 ▼</div>
+      <div class="hint">
+        操作方式一(拖曳):按住色條直接拖到目標格。<br>
+        操作方式二(點選):點一下色條選中(會加粗),再點目標格放置。<br>
+        拖/放到已有人的格會自動<b>交換位置</b>。橫向=左右站位;縱向=前後深度,越近觀眾席越前。
+      </div>
+      </div>
+    </div>
+
+    <div class="panel collapsible" data-ckey="form">
+      <div class="chead"><h2>走位圖層</h2><button class="tbtn ctoggle">收起</button></div>
+      <div class="cbody">
+      <div class="layer-chips" id="layerChips"></div>
+      <table>
+        <thead><tr><th>成員</th><th>時間</th><th>格(左右)</th><th>排(前後)</th><th></th></tr></thead>
+        <tbody id="formBody"></tbody>
+      </table>
+      <div class="quick" style="margin:12px 0 0">
+        <span class="filehint">複製走位(依上方成員篩選):</span>
+        由 <input type="text" id="fcFrom" class="mono" style="width:74px" placeholder="0:00.0">
+        至 <input type="text" id="fcTo" class="mono" style="width:74px" placeholder="0:30.0">
+        貼到 <input type="text" id="fcDest" class="mono" style="width:74px" placeholder="1:30.0">
+        <button class="tbtn" id="fcApply">套用</button>
+      </div>
+      <div class="hint">每行是一個走位指令。時間 0:00.0 的指令代表開場站位。第 7 排最前(最近觀眾),第 1 排最後。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- song library -->
+  <div class="panel">
+    <h2>歌曲儲存庫</h2>
+    <div class="quick">
+      <button class="btn" id="newPlanBtn">✦ 新建方案</button>
+      <button class="btn" id="saveNewBtn">＋ 儲存為新歌曲</button>
+      <button class="btn" id="exportBtn">匯出備份</button>
+      <button class="btn" id="importBtn">匯入備份</button>
+    </div>
+    <div id="songList"></div>
+    <div class="hint">儲存內容:兩頁標註+成員設定+<b>音檔(存於此裝置)</b>。匯出備份為 JSON 檔,<b>不含音檔</b>,可轉移到其他裝置後重選音檔。</div>
+  </div>
+</div>
+
+<!-- performance mode -->
+<div class="perfscreen" id="perfScreen">
+  <div class="inner" id="perfInner">
+    <button class="btn small perf-exit" id="perfExit">✕ 離開表演模式</button>
+  </div>
+</div>
+
+<!-- stats -->
+<div class="overlay" id="statsOverlay">
+  <div class="sheet">
+    <h3>演唱結算</h3>
+    <div id="statsBody"></div>
+    <button class="btn" id="statsClose">關閉</button>
+  </div>
+</div>
+
+<div class="overlay" id="memOverlay"><div class="sheet" id="memSheet"></div></div>
+
+<!-- new plan -->
+<div class="overlay" id="newOverlay">
+  <div class="sheet">
+    <h3>新建方案</h3>
+    <div class="hint" style="margin:0">是否保存正在編輯的方案?</div>
+    <div class="row">
+      <button class="btn" id="npYes">是,保存後新建</button>
+      <button class="btn" id="npNo">否,直接新建</button>
+    </div>
+    <button class="btn" id="npBack">返回</button>
+  </div>
+</div>
+
+<div class="overlay" id="themeOverlay">
+  <div class="sheet">
+    <h3>介面外觀</h3>
+    <div><label>背景顏色(16色)</label><div class="swatches" id="themeSwatches"></div></div>
+    <div><label>背景圖片</label>
+      <div class="row">
+        <button class="btn" id="bgImgBtn">上載背景圖</button>
+        <button class="btn" id="bgImgRm">移除背景圖</button>
+      </div>
+    </div>
+    <button class="btn" id="themeClose">完成</button>
+  </div>
+</div>
+
+<script src="sp-core.js"></script>
+<script src="sp-media.js"></script>
+<script src="sp-ui.js"></script>
+<script src="sp-features.js"></script>
+</body>
+</html>
