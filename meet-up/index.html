@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>夾日子</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Serif+TC:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EAEBE6;
+    --paper-2:#F3F4F0;
+    --ink:#141C2B;
+    --ink-soft:#5C6675;
+    --line:#C8CAC3;
+    --seal:#B33A2B;
+    --dip-1:#CBD9E2;
+    --dip-2:#9DB8CC;
+    --dip-3:#6389AC;
+    --dip-4:#35608C;
+    --dip-5:#1B3A63;
+    --serif:"Noto Serif TC", serif;
+    --mono:"IBM Plex Mono", ui-monospace, monospace;
+    --sans:-apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", sans-serif;
+  }
+
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--sans);
+    font-size:15px;
+    line-height:1.6;
+    min-height:100vh;
+    padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  }
+
+  .wrap{max-width:520px; margin:0 auto; padding:24px 18px 64px;}
+
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.22em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin:0 0 6px;
+  }
+
+  .title{
+    font-family:var(--serif);
+    font-weight:700;
+    font-size:34px;
+    line-height:1.15;
+    letter-spacing:.04em;
+    margin:0 0 10px;
+  }
+
+  .lede{color:var(--ink-soft); margin:0 0 28px; font-size:14px;}
+
+  .field{margin-bottom:16px;}
+
+  .field label{
+    display:block;
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+  }
+
+  .field input{
+    width:100%;
+    padding:12px 14px;
+    font-size:16px;
+    font-family:var(--sans);
+    color:var(--ink);
+    background:var(--paper-2);
+    border:1px solid var(--line);
+    border-radius:2px;
+    outline:none;
+  }
+
+  .field input:focus{border-color:var(--dip-4); box-shadow:0 0 0 2px rgba(53,96,140,.18);}
+  .field input.code{font-family:var(--mono); letter-spacing:.3em; text-transform:uppercase;}
+
+  .btn{
+    display:block;
+    width:100%;
+    padding:14px;
+    font-family:var(--sans);
+    font-size:15px;
+    font-weight:600;
+    letter-spacing:.06em;
+    color:var(--paper-2);
+    background:var(--dip-5);
+    border:none;
+    border-radius:2px;
+    cursor:pointer;
+  }
+
+  .btn:active{background:var(--dip-4);}
+  .btn[disabled]{opacity:.5; cursor:default;}
+
+  .btn-quiet{background:transparent; color:var(--ink); border:1px solid var(--line);}
+  .btn-quiet:active{background:rgba(0,0,0,.05);}
+
+  .divider{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin:28px 0;
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.2em;
+    color:var(--ink-soft);
+  }
+
+  .divider::before,.divider::after{content:""; flex:1; height:1px; background:var(--line);}
+
+  .card{
+    background:var(--paper-2);
+    border:1px solid var(--line);
+    border-radius:2px;
+    padding:20px 18px;
+  }
+
+  .card + .card{margin-top:18px;}
+
+  .card h2{
+    font-family:var(--serif);
+    font-weight:500;
+    font-size:19px;
+    letter-spacing:.05em;
+    margin:0 0 14px;
+  }
+
+  .roomhead{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:14px;
+    padding-bottom:16px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:14px;
+  }
+
+  .roomhead h1{
+    font-family:var(--serif);
+    font-weight:700;
+    font-size:24px;
+    letter-spacing:.04em;
+    margin:0;
+  }
+
+  .roomhead .who{font-size:13px; color:var(--ink-soft); margin-top:4px;}
+
+  .seal{
+    flex:none;
+    background:var(--seal);
+    color:#F6EFE9;
+    font-family:var(--mono);
+    font-weight:600;
+    font-size:15px;
+    letter-spacing:.16em;
+    padding:8px 10px;
+    border-radius:2px;
+    text-align:center;
+    cursor:pointer;
+    border:none;
+  }
+
+  .seal small{display:block; font-size:8px; letter-spacing:.2em; opacity:.8; margin-bottom:2px;}
+
+  .statusbar{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:16px;
+    font-family:var(--mono);
+    font-size:10px;
+    letter-spacing:.14em;
+    color:var(--ink-soft);
+  }
+
+  .live{display:inline-flex; align-items:center; gap:6px;}
+
+  .live i{
+    width:6px; height:6px;
+    border-radius:50%;
+    background:var(--dip-3);
+    display:block;
+    animation:pulse 2s infinite;
+  }
+
+  .live.off i{background:var(--seal); animation:none;}
+
+  @keyframes pulse{0%,100%{opacity:1;} 50%{opacity:.25;}}
+
+  .statusbar .sync{
+    margin-left:auto;
+    background:none;
+    border:1px solid var(--line);
+    border-radius:2px;
+    padding:4px 9px;
+    font-family:var(--mono);
+    font-size:10px;
+    letter-spacing:.14em;
+    color:var(--ink-soft);
+    cursor:pointer;
+  }
+
+  .monthbar{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;}
+  .monthbar .m{font-family:var(--serif); font-weight:500; font-size:20px; letter-spacing:.06em;}
+
+  .navbtn{
+    width:38px; height:38px;
+    border:1px solid var(--line);
+    background:var(--paper-2);
+    color:var(--ink);
+    font-size:15px;
+    border-radius:2px;
+    cursor:pointer;
+  }
+
+  .navbtn:active{background:rgba(0,0,0,.05);}
+
+  .dow{display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:4px;}
+
+  .dow span{
+    text-align:center;
+    font-family:var(--mono);
+    font-size:10px;
+    letter-spacing:.14em;
+    color:var(--ink-soft);
+    padding:4px 0;
+  }
+
+  .grid{display:grid; grid-template-columns:repeat(7,1fr); gap:4px;}
+
+  .cell{
+    position:relative;
+    aspect-ratio:1/1.12;
+    border:1px solid var(--line);
+    background:var(--paper-2);
+    border-radius:2px;
+    padding:0;
+    overflow:hidden;
+    cursor:pointer;
+    font-family:var(--mono);
+    color:var(--ink);
+    display:block;
+  }
+
+  .cell.blank{border-color:transparent; background:transparent; cursor:default;}
+  .cell.past{opacity:.45;}
+
+  .dye{
+    position:absolute;
+    left:0; right:0; bottom:0;
+    height:0;
+    background:var(--dip-1);
+    transition:height .45s cubic-bezier(.22,.8,.3,1), background-color .35s ease;
+  }
+
+  .cell.lv1 .dye{height:100%; background:var(--dip-1);}
+  .cell.lv2 .dye{height:100%; background:var(--dip-2);}
+  .cell.lv3 .dye{height:100%; background:var(--dip-3);}
+  .cell.lv4 .dye{height:100%; background:var(--dip-4);}
+  .cell.lv5 .dye{height:100%; background:var(--dip-5);}
+
+  .cell .d{
+    position:relative;
+    display:block;
+    font-size:15px;
+    font-weight:500;
+    padding-top:7px;
+    text-align:center;
+  }
+
+  .cell .n{
+    position:relative;
+    display:block;
+    font-size:10px;
+    letter-spacing:.06em;
+    text-align:center;
+    margin-top:1px;
+    opacity:.75;
+    min-height:14px;
+  }
+
+  .cell.lv3 .d,.cell.lv4 .d,.cell.lv5 .d,
+  .cell.lv3 .n,.cell.lv4 .n,.cell.lv5 .n{color:var(--paper-2);}
+
+  .cell .mark{
+    position:absolute;
+    top:4px; right:4px;
+    width:7px; height:7px;
+    background:var(--seal);
+    border-radius:1px;
+    opacity:0;
+    transform:scale(.4);
+    transition:opacity .2s ease, transform .2s ease;
+  }
+
+  .cell.mine .mark{opacity:1; transform:scale(1);}
+
+  .legend{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin:14px 0 24px;
+    font-family:var(--mono);
+    font-size:10px;
+    letter-spacing:.12em;
+    color:var(--ink-soft);
+  }
+
+  .swatches{display:flex; gap:3px;}
+  .swatches i{width:16px; height:10px; border-radius:1px; display:block;}
+  .legend .mine-key{display:flex; align-items:center; gap:5px; margin-left:auto;}
+  .legend .mine-key i{width:7px; height:7px; background:var(--seal); border-radius:1px; display:block;}
+
+  .rank{list-style:none; margin:0; padding:0;}
+  .rank li{display:flex; gap:12px; padding:11px 0; border-top:1px solid var(--line);}
+  .rank li:first-child{border-top:none;}
+
+  .rank .date{flex:none; width:74px; font-family:var(--mono); font-size:13px; font-weight:500;}
+  .rank .date small{display:block; font-size:10px; color:var(--ink-soft); letter-spacing:.1em;}
+  .rank .who{flex:1; font-size:13px; line-height:1.5;}
+  .rank .cnt{flex:none; font-family:var(--mono); font-size:13px; font-weight:600; color:var(--dip-5);}
+
+  .empty{color:var(--ink-soft); font-size:13px; margin:0;}
+
+  .toast{
+    position:fixed;
+    left:50%;
+    bottom:24px;
+    transform:translateX(-50%) translateY(20px);
+    background:var(--ink);
+    color:var(--paper);
+    font-size:13px;
+    padding:10px 18px;
+    border-radius:2px;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .25s ease, transform .25s ease;
+    z-index:50;
+    max-width:88vw;
+    text-align:center;
+  }
+
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  .toast.err{background:var(--seal);}
+
+  .foot{margin-top:32px; padding-top:16px; border-top:1px solid var(--line); display:flex; gap:10px;}
+  .foot button{flex:1; padding:11px; font-size:13px;}
+
+  details.diag{margin-top:20px;}
+
+  details.diag summary{
+    font-family:var(--mono);
+    font-size:10px;
+    letter-spacing:.16em;
+    color:var(--ink-soft);
+    cursor:pointer;
+    padding:6px 0;
+  }
+
+  details.diag pre{
+    font-family:var(--mono);
+    font-size:11px;
+    line-height:1.7;
+    background:var(--paper-2);
+    border:1px solid var(--line);
+    padding:12px;
+    border-radius:2px;
+    overflow-x:auto;
+    white-space:pre-wrap;
+    word-break:break-all;
+    margin:6px 0 0;
+    color:var(--ink-soft);
+  }
+
+  .hidden{display:none !important;}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important; transition:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- ================= 入口 ================= -->
+  <section id="view-home">
+    <p class="eyebrow">Shared Calendar</p>
+    <h1 class="title">夾日子</h1>
+    <p class="lede">每人撳低自己得閒嘅日子。撳嘅人愈多,格仔顏色愈深,一眼就見到邊日最夾得埋。</p>
+
+    <div class="card" id="resumeCard" style="display:none">
+      <h2>返回上次嘅房間</h2>
+      <p class="empty" id="resumeInfo">—</p>
+      <button class="btn" id="btnResume" style="margin-top:14px">繼續</button>
+    </div>
+
+    <div class="card">
+      <h2>加入房間</h2>
+      <div class="field">
+        <label for="joinCode">房間號碼</label>
+        <input id="joinCode" class="code" type="text" placeholder="ABC123" maxlength="6" autocomplete="off" autocapitalize="characters">
+      </div>
+      <div class="field">
+        <label for="joinName">你嘅名</label>
+        <input id="joinName" type="text" placeholder="例如:阿明" autocomplete="off">
+      </div>
+      <button class="btn" id="btnJoin">加入</button>
+    </div>
+
+    <div class="divider">或</div>
+
+    <div class="card">
+      <h2>建立新房間</h2>
+      <div class="field">
+        <label for="newTitle">房間名稱</label>
+        <input id="newTitle" type="text" placeholder="例如:十月行山" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="newName">你嘅名</label>
+        <input id="newName" type="text" placeholder="例如:阿明" autocomplete="off">
+      </div>
+      <button class="btn btn-quiet" id="btnCreate">建立房間</button>
+    </div>
+
+    <details class="diag">
+      <summary>連線診斷</summary>
+      <pre id="diagHome">未開始</pre>
+    </details>
+  </section>
+
+  <!-- ================= 房間 ================= -->
+  <section id="view-room" class="hidden">
+    <div class="roomhead">
+      <div>
+        <h1 id="roomTitle">—</h1>
+        <div class="who" id="roomWho">—</div>
+      </div>
+      <button class="seal" id="roomCode" title="複製邀請連結">
+        <small>CODE</small>
+        <span id="roomCodeText">——</span>
+      </button>
+    </div>
+
+    <div class="statusbar">
+      <span class="live" id="liveTag"><i></i><span>連線中</span></span>
+      <button class="sync" id="btnSync">重新載入</button>
+    </div>
+
+    <div class="monthbar">
+      <button class="navbtn" id="prevM" aria-label="上個月">←</button>
+      <div class="m" id="monthLabel">—</div>
+      <button class="navbtn" id="nextM" aria-label="下個月">→</button>
+    </div>
+
+    <div class="dow">
+      <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+    </div>
+
+    <div class="grid" id="grid"></div>
+
+    <div class="legend">
+      <span>人數</span>
+      <div class="swatches">
+        <i style="background:var(--dip-1)"></i>
+        <i style="background:var(--dip-2)"></i>
+        <i style="background:var(--dip-3)"></i>
+        <i style="background:var(--dip-4)"></i>
+        <i style="background:var(--dip-5)"></i>
+      </div>
+      <span>少 → 多</span>
+      <span class="mine-key"><i></i>你揀咗</span>
+    </div>
+
+    <div class="card">
+      <h2>邊日最多人</h2>
+      <ul class="rank" id="rank"></ul>
+      <p class="empty hidden" id="rankEmpty">仲未有人揀日子。撳上面日曆任何一格開始。</p>
+    </div>
+
+    <div class="foot">
+      <button class="btn btn-quiet" id="btnShare">複製邀請連結</button>
+      <button class="btn btn-quiet" id="btnLeave">離開房間</button>
+    </div>
+
+    <details class="diag">
+      <summary>連線診斷</summary>
+      <pre id="diagRoom">—</pre>
+    </details>
+  </section>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* =====================================================
+   設定
+   ===================================================== */
+const SUPABASE_URL  = "https://nyfcryfwodvlqtnobxop.supabase.co";
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55ZmNyeWZ3b2R2bHF0bm9ieG9wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4MjkyMjcsImV4cCI6MjEwMTQwNTIyN30.nyuF-Az8qGQjFgUWvb0dD_2GTo1Jz35WXsWV8jljubE";
+
+const POLL_MS = 8000;   // 後備輪詢間隔
+
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+/* =====================================================
+   狀態
+   ===================================================== */
+const state = {
+  room:null,
+  me:"",
+  votes:[],
+  cursor:new Date(),
+  channel:null,
+  rtStatus:"未連線",
+  lastSync:null,
+  lastError:"",
+  busy:new Set(),
+  pollTimer:null
+};
+
+/* =====================================================
+   小工具
+   ===================================================== */
+const $ = id => document.getElementById(id);
+const pad = n => String(n).padStart(2,"0");
+const dateKey = (y,m,d) => `${y}-${pad(m+1)}-${pad(d)}`;
+const todayKey = (()=>{const t=new Date();return dateKey(t.getFullYear(),t.getMonth(),t.getDate());})();
+const WEEK_TC = ["日","一","二","三","四","五","六"];
+
+// localStorage 喺無痕模式會擲錯,一律包起
+const store = {
+  get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
+  set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} },
+  del(k){ try{ localStorage.removeItem(k); }catch(e){} }
+};
+
+let toastTimer;
+function toast(msg,isErr){
+  const el=$("toast");
+  el.textContent=msg;
+  el.className="toast show"+(isErr?" err":"");
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>{el.className="toast";},3200);
+}
+
+function makeCode(){
+  const a="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let o="";
+  for(let i=0;i<6;i++) o+=a[Math.floor(Math.random()*a.length)];
+  return o;
+}
+
+function diag(){
+  const t = state.lastSync ? state.lastSync.toLocaleTimeString("zh-HK") : "未曾";
+  const txt =
+    "房間號碼  " + (state.room ? state.room.room_code : "—") + "\n" +
+    "房間 ID   " + (state.room ? state.room.id : "—") + "\n" +
+    "你嘅名    " + (state.me || "—") + "\n" +
+    "即時狀態  " + state.rtStatus + "\n" +
+    "紀錄總數  " + state.votes.length + "\n" +
+    "參與者    " + ([...new Set(state.votes.map(v=>v.name))].join("、") || "—") + "\n" +
+    "上次同步  " + t + "\n" +
+    "最後錯誤  " + (state.lastError || "無");
+  $("diagRoom").textContent = txt;
+  $("diagHome").textContent = txt;
+}
+
+/* =====================================================
+   建立 / 加入
+   ===================================================== */
+$("btnCreate").addEventListener("click", async ()=>{
+  const title=$("newTitle").value.trim()||"未命名房間";
+  const name=$("newName").value.trim();
+  if(!name) return toast("請先填你嘅名",true);
+
+  const btn=$("btnCreate");
+  btn.disabled=true; btn.textContent="建立中…";
+  try{
+    let room=null;
+    for(let i=0;i<3 && !room;i++){
+      const {data,error}=await db.from("rooms")
+        .insert({room_code:makeCode(),title}).select().single();
+      if(!error){ room=data; break; }
+      if(error.code!=="23505") throw error;
+    }
+    if(!room) throw new Error("無法產生房間號碼");
+    state.me=name;
+    store.set("myName",name);
+    await enterRoom(room);
+  }catch(e){
+    state.lastError=(e.code?e.code+" ":"")+(e.message||"未知");
+    diag();
+    toast("建立失敗:"+state.lastError,true);
+  }finally{
+    btn.disabled=false; btn.textContent="建立房間";
+  }
+});
+
+$("btnJoin").addEventListener("click", ()=>{
+  const code=$("joinCode").value.trim().toUpperCase();
+  const name=$("joinName").value.trim();
+  if(code.length!==6) return toast("房間號碼係 6 個字元",true);
+  if(!name) return toast("請先填你嘅名",true);
+  doJoin(code,name);
+});
+
+async function doJoin(code,name){
+  const btn=$("btnJoin");
+  btn.disabled=true; btn.textContent="搵緊房間…";
+  try{
+    const {data,error}=await db.from("rooms").select().eq("room_code",code).maybeSingle();
+    if(error) throw error;
+    if(!data){ toast("搵唔到呢個房間號碼",true); return; }
+    state.me=name;
+    store.set("myName",name);
+    await enterRoom(data);
+  }catch(e){
+    state.lastError=(e.code?e.code+" ":"")+(e.message||"未知");
+    diag();
+    toast("加入失敗:"+state.lastError,true);
+  }finally{
+    btn.disabled=false; btn.textContent="加入";
+  }
+}
+
+async function enterRoom(room){
+  state.room=room;
+  state.cursor=new Date();
+
+  store.set("lastRoom",room.room_code);
+
+  $("view-home").classList.add("hidden");
+  $("view-room").classList.remove("hidden");
+  $("roomTitle").textContent=room.title||"未命名房間";
+  $("roomWho").textContent="你係:"+state.me;
+  $("roomCodeText").textContent=room.room_code;
+
+  if(location.hash!=="#r="+room.room_code){
+    history.replaceState(null,"","#r="+room.room_code);
+  }
+
+  await loadVotes();
+  render();
+  subscribe();
+  startPolling();
+}
+
+$("btnLeave").addEventListener("click", ()=>{
+  stopPolling();
+  if(state.channel){ db.removeChannel(state.channel); state.channel=null; }
+  state.room=null; state.votes=[]; state.rtStatus="未連線";
+  store.del("lastRoom");
+  history.replaceState(null,"",location.pathname);
+  $("view-room").classList.add("hidden");
+  $("view-home").classList.remove("hidden");
+  showResume();
+});
+
+/* =====================================================
+   讀取
+   ===================================================== */
+async function loadVotes(){
+  const {data,error}=await db.from("votes")
+    .select("name, vote_date").eq("room_id",state.room.id);
+  if(error){
+    state.lastError=(error.code?error.code+" ":"")+error.message;
+    diag();
+    toast("讀取失敗:"+error.message,true);
+    return false;
+  }
+  state.votes=data||[];
+  state.lastSync=new Date();
+  state.lastError="";
+  diag();
+  return true;
+}
+
+async function refresh(){
+  if(!state.room) return;
+  const ok=await loadVotes();
+  if(ok) render();
+}
+
+/* 後備輪詢:即使即時連線失效,都一定睇到其他人 */
+function startPolling(){
+  stopPolling();
+  state.pollTimer=setInterval(()=>{
+    if(document.hidden) return;
+    refresh();
+  },POLL_MS);
+}
+
+function stopPolling(){
+  if(state.pollTimer){ clearInterval(state.pollTimer); state.pollTimer=null; }
+}
+
+document.addEventListener("visibilitychange",()=>{
+  if(!document.hidden && state.room) refresh();
+});
+
+$("btnSync").addEventListener("click", async ()=>{
+  const b=$("btnSync");
+  b.textContent="載入中…";
+  await refresh();
+  b.textContent="重新載入";
+  toast("已更新");
+});
+
+/* =====================================================
+   即時訂閱
+   ===================================================== */
+let reloadTimer;
+function subscribe(){
+  if(state.channel) db.removeChannel(state.channel);
+
+  state.channel=db.channel("room-"+state.room.id)
+    .on("postgres_changes",
+      {event:"*",schema:"public",table:"votes",filter:"room_id=eq."+state.room.id},
+      ()=>{
+        clearTimeout(reloadTimer);
+        reloadTimer=setTimeout(refresh,150);
+      })
+    .subscribe(status=>{
+      state.rtStatus=status;
+      const tag=$("liveTag");
+      if(status==="SUBSCRIBED"){
+        tag.className="live";
+        tag.querySelector("span").textContent="即時同步中";
+      }else{
+        tag.className="live off";
+        tag.querySelector("span").textContent="定時更新中";
+      }
+      diag();
+    });
+}
+
+/* =====================================================
+   投票
+   ===================================================== */
+async function toggleVote(key){
+  if(state.busy.has(key)) return;
+  state.busy.add(key);
+
+  const mine=state.votes.some(v=>v.vote_date===key && v.name===state.me);
+
+  if(mine){
+    state.votes=state.votes.filter(v=>!(v.vote_date===key && v.name===state.me));
+  }else{
+    state.votes=state.votes.concat([{name:state.me,vote_date:key}]);
+  }
+  render();
+
+  try{
+    if(mine){
+      const {error}=await db.from("votes").delete()
+        .eq("room_id",state.room.id).eq("name",state.me).eq("vote_date",key);
+      if(error) throw error;
+    }else{
+      const {error}=await db.from("votes")
+        .insert({room_id:state.room.id,name:state.me,vote_date:key});
+      if(error && error.code!=="23505") throw error;
+    }
+    state.lastError="";
+    diag();
+  }catch(e){
+    state.lastError=(e.code?e.code+" ":"")+(e.message||"未知");
+    diag();
+    toast("儲存失敗:"+state.lastError,true);
+    await refresh();
+  }finally{
+    state.busy.delete(key);
+  }
+}
+
+/* =====================================================
+   畫面
+   ===================================================== */
+function tally(){
+  const map=new Map();
+  for(const v of state.votes){
+    if(!map.has(v.vote_date)) map.set(v.vote_date,[]);
+    map.get(v.vote_date).push(v.name);
+  }
+  return map;
+}
+
+function render(){
+  const map=tally();
+  renderGrid(map);
+  renderRank(map);
+}
+
+function renderGrid(map){
+  const y=state.cursor.getFullYear();
+  const m=state.cursor.getMonth();
+  $("monthLabel").textContent=`${y} 年 ${m+1} 月`;
+
+  const first=new Date(y,m,1).getDay();
+  const days=new Date(y,m+1,0).getDate();
+  const grid=$("grid");
+  grid.innerHTML="";
+
+  for(let i=0;i<first;i++){
+    const b=document.createElement("div");
+    b.className="cell blank";
+    grid.appendChild(b);
+  }
+
+  for(let d=1;d<=days;d++){
+    const key=dateKey(y,m,d);
+    const names=map.get(key)||[];
+    const count=names.length;
+    const mine=names.includes(state.me);
+
+    const cell=document.createElement("button");
+    cell.type="button";
+    cell.className="cell"
+      +(count?" lv"+Math.min(count,5):"")
+      +(mine?" mine":"")
+      +(key<todayKey?" past":"");
+    cell.setAttribute("aria-pressed",mine?"true":"false");
+    cell.setAttribute("aria-label",`${m+1}月${d}日,${count} 人得閒`);
+
+    cell.innerHTML=
+      '<span class="dye"></span>'+
+      '<span class="mark"></span>'+
+      '<span class="d">'+d+'</span>'+
+      '<span class="n">'+(count?count+"人":"")+'</span>';
+
+    cell.addEventListener("click",()=>toggleVote(key));
+    grid.appendChild(cell);
+  }
+}
+
+function renderRank(map){
+  const rows=[...map.entries()]
+    .filter(([,n])=>n.length>0)
+    .sort((a,b)=>b[1].length-a[1].length || a[0].localeCompare(b[0]));
+
+  const ul=$("rank");
+  ul.innerHTML="";
+  $("rankEmpty").classList.toggle("hidden",rows.length>0);
+
+  for(const [key,names] of rows){
+    const [yy,mm,dd]=key.split("-").map(Number);
+    const w=WEEK_TC[new Date(yy,mm-1,dd).getDay()];
+    const li=document.createElement("li");
+    li.innerHTML=
+      '<div class="date">'+mm+'/'+dd+'<small>星期'+w+'</small></div>'+
+      '<div class="who"></div>'+
+      '<div class="cnt">'+names.length+'</div>';
+    li.querySelector(".who").textContent=names.join("、");
+    ul.appendChild(li);
+  }
+}
+
+/* =====================================================
+   月份 / 分享
+   ===================================================== */
+$("prevM").addEventListener("click",()=>{
+  state.cursor=new Date(state.cursor.getFullYear(),state.cursor.getMonth()-1,1);
+  render();
+});
+
+$("nextM").addEventListener("click",()=>{
+  state.cursor=new Date(state.cursor.getFullYear(),state.cursor.getMonth()+1,1);
+  render();
+});
+
+function shareLink(){
+  const url=location.origin+location.pathname+"#r="+state.room.room_code;
+  if(navigator.share){
+    navigator.share({title:state.room.title,url}).catch(()=>{});
+    return;
+  }
+  navigator.clipboard.writeText(url)
+    .then(()=>toast("邀請連結已複製"))
+    .catch(()=>toast(url));
+}
+
+$("btnShare").addEventListener("click",shareLink);
+$("roomCode").addEventListener("click",shareLink);
+
+/* =====================================================
+   啟動:自動返回上次房間
+   ===================================================== */
+function showResume(){
+  const name=store.get("myName");
+  const code=store.get("lastRoom");
+  if(name) { $("joinName").value=name; $("newName").value=name; }
+  if(name && code){
+    $("resumeCard").style.display="block";
+    $("resumeInfo").textContent="房間 "+code+" · 你係 "+name;
+    $("btnResume").onclick=()=>doJoin(code,name);
+  }else{
+    $("resumeCard").style.display="none";
+  }
+}
+
+(async function init(){
+  showResume();
+  diag();
+
+  const hashCode=(location.hash.match(/r=([A-Za-z0-9]{6})/)||[])[1];
+  const savedName=store.get("myName");
+  const savedRoom=store.get("lastRoom");
+  const code=(hashCode||savedRoom||"").toUpperCase();
+
+  if(code) $("joinCode").value=code;
+
+  // 有名有房 → 直接入返去,唔使再填
+  if(code && savedName){
+    await doJoin(code,savedName);
+  }else if(code){
+    setTimeout(()=>$("joinName").focus(),300);
+  }
+})();
+</script>
+</body>
+</html>
