@@ -16,6 +16,7 @@
     --line:#C8CAC3;
     --seal:#B33A2B;
     --dip-5:#1B3A63;
+    --dip-3:#7FA0BC;
     --side-w:262px;
     --serif:"Noto Serif TC", serif;
     --mono:"IBM Plex Mono", ui-monospace, monospace;
@@ -39,13 +40,11 @@
 
   /* ---------- 左欄 ---------- */
   .side{
-    position:fixed;
-    left:0; top:0; bottom:0;
+    position:fixed; left:0; top:0; bottom:0;
     width:var(--side-w);
     background:var(--paper-2);
     border-right:1px solid var(--line);
-    z-index:70;
-    overflow-y:auto;
+    z-index:70; overflow-y:auto;
     -webkit-overflow-scrolling:touch;
     padding:20px 16px calc(20px + env(safe-area-inset-bottom));
     transform:translateX(-100%);
@@ -54,15 +53,8 @@
 
   .side.open{transform:none;}
 
-  .side-head{
-    display:flex; align-items:center; justify-content:space-between;
-    margin-bottom:26px;
-  }
-
-  .side-head .brand{
-    font-family:var(--serif); font-weight:700;
-    font-size:19px; letter-spacing:.06em;
-  }
+  .side-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:26px;}
+  .side-head .brand{font-family:var(--serif); font-weight:700; font-size:19px; letter-spacing:.06em;}
 
   .side-close{
     background:none; border:none; font-size:24px; line-height:1;
@@ -71,38 +63,28 @@
 
   .side-label{
     font-family:var(--mono); font-size:10px; letter-spacing:.18em;
-    text-transform:uppercase; color:var(--ink-soft);
-    margin:0 0 9px;
+    text-transform:uppercase; color:var(--ink-soft); margin:0 0 9px;
   }
 
   .roomlist{list-style:none; margin:0 0 20px; padding:0;}
-
   .roomlist li{display:flex; align-items:stretch; gap:4px; margin-bottom:5px;}
 
   .roomlist .go{
     flex:1; text-align:left; background:transparent;
     border:1px solid var(--line); border-radius:2px;
     padding:9px 10px; cursor:pointer; color:var(--ink);
-    font-family:var(--sans); font-size:14px; line-height:1.35;
-    overflow:hidden;
+    font-family:var(--sans); font-size:14px; line-height:1.35; overflow:hidden;
   }
 
   .roomlist .go:active{background:rgba(0,0,0,.05);}
-
-  .roomlist .go b{
-    display:block; font-weight:600;
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-  }
+  .roomlist .go b{display:block; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 
   .roomlist .go small{
-    display:block; font-family:var(--mono);
-    font-size:10px; letter-spacing:.16em; color:var(--ink-soft); margin-top:1px;
+    display:block; font-family:var(--mono); font-size:10px;
+    letter-spacing:.16em; color:var(--ink-soft); margin-top:1px;
   }
 
-  .roomlist li.active .go{
-    background:var(--dip-5); border-color:var(--dip-5); color:var(--paper-2);
-  }
-
+  .roomlist li.active .go{background:var(--dip-5); border-color:var(--dip-5); color:var(--paper-2);}
   .roomlist li.active .go small{color:rgba(243,244,240,.72);}
 
   .roomlist .drop{
@@ -116,8 +98,7 @@
   .scrim{
     position:fixed; inset:0; z-index:65;
     background:rgba(20,28,43,.4);
-    opacity:0; pointer-events:none;
-    transition:opacity .28s ease;
+    opacity:0; pointer-events:none; transition:opacity .28s ease;
   }
 
   .scrim.open{opacity:1; pointer-events:auto;}
@@ -133,14 +114,10 @@
   }
 
   .menubtn i{display:block; width:15px; height:1.5px; background:var(--ink);}
-
-  .topbar .crumb{
-    font-family:var(--mono); font-size:10px;
-    letter-spacing:.16em; color:var(--ink-soft);
-  }
+  .topbar .crumb{font-family:var(--mono); font-size:10px; letter-spacing:.16em; color:var(--ink-soft);}
 
   @media (min-width:980px){
-    .side{transform:none; box-shadow:none;}
+    .side{transform:none;}
     .side-close{display:none;}
     .scrim{display:none !important;}
     body{padding-left:var(--side-w);}
@@ -222,11 +199,7 @@
     gap:14px; padding-bottom:16px; border-bottom:1px solid var(--line); margin-bottom:14px;
   }
 
-  .roomhead h1{
-    font-family:var(--serif); font-weight:700; font-size:24px;
-    letter-spacing:.04em; margin:0;
-  }
-
+  .roomhead h1{font-family:var(--serif); font-weight:700; font-size:24px; letter-spacing:.04em; margin:0;}
   .roomhead .who{font-size:13px; color:var(--ink-soft); margin-top:4px;}
 
   .seal{
@@ -286,17 +259,13 @@
     letter-spacing:.12em; color:var(--ink-soft); padding:4px 0;
   }
 
-  .grid{
-    display:grid; grid-template-columns:repeat(7,1fr);
-    gap:3px; grid-auto-rows:minmax(50px,auto);
-  }
+  .grid{display:grid; grid-template-columns:repeat(7,1fr); gap:3px; grid-auto-rows:minmax(50px,auto);}
 
   .cell{
     position:relative; border:1px solid var(--line);
     background:var(--paper-2); border-radius:2px;
     padding:4px 2px 5px; overflow:hidden; cursor:pointer;
-    font-family:var(--mono); color:var(--ink); display:block;
-    text-align:center;
+    font-family:var(--mono); color:var(--ink); display:block; text-align:center;
   }
 
   .cell.blank{border-color:transparent; background:transparent; cursor:default;}
@@ -340,15 +309,55 @@
   .barhead .wd{font-size:10px; color:var(--ink-soft); letter-spacing:.1em;}
   .barhead .ct{margin-left:auto; font-weight:600; color:var(--dip-5);}
 
-  .track{height:16px; background:#E1E3DE; border-radius:1px; overflow:hidden;}
+  .track{
+    display:flex; height:20px; background:#E1E3DE;
+    border-radius:1px; overflow:hidden;
+  }
 
-  .fill{
-    height:100%; width:0; background:var(--dip-5);
+  .seg{
+    display:flex; align-items:center; justify-content:flex-end;
+    width:0; overflow:hidden; white-space:nowrap;
+    padding:0 5px; font-family:var(--mono);
+    font-size:10px; font-weight:600; letter-spacing:.06em;
     transition:width .6s cubic-bezier(.22,.8,.3,1);
   }
 
-  .bars li:nth-child(2) .fill{background:#4A729B;}
-  .bars li:nth-child(3) .fill{background:#7FA0BC;}
+  .seg.day{background:#A9C4D9; color:#141C2B;}
+  .seg.night{background:var(--dip-5); color:#F3F4F0;}
+
+  .filterbar{
+    display:flex; align-items:center; gap:10px; margin-bottom:16px;
+  }
+
+  .filterbar .flabel{
+    font-family:var(--mono); font-size:10px;
+    letter-spacing:.18em; text-transform:uppercase; color:var(--ink-soft);
+  }
+
+  .segtoggle{display:flex; margin-left:auto; border:1px solid var(--line); border-radius:2px; overflow:hidden;}
+
+  .segtoggle button{
+    background:transparent; border:none; cursor:pointer;
+    padding:7px 13px; font-family:var(--sans); font-size:12px;
+    color:var(--ink-soft); letter-spacing:.04em;
+  }
+
+  .segtoggle button + button{border-left:1px solid var(--line);}
+  .segtoggle button.on{background:var(--dip-5); color:var(--paper-2); font-weight:600;}
+
+  .subnote{
+    font-family:var(--mono); font-size:10px; letter-spacing:.1em;
+    color:var(--ink-soft); margin:0 0 12px;
+  }
+
+  .keys{
+    display:flex; gap:14px; margin-top:12px;
+    font-family:var(--mono); font-size:10px;
+    letter-spacing:.1em; color:var(--ink-soft);
+  }
+
+  .keys span{display:inline-flex; align-items:center; gap:5px;}
+  .keys i{width:12px; height:8px; border-radius:1px; display:block;}
 
   .empty{color:var(--ink-soft); font-size:13px; margin:0;}
 
@@ -356,8 +365,7 @@
   .sheet{
     position:fixed; inset:0; z-index:90;
     background:rgba(20,28,43,.45);
-    display:flex; align-items:flex-end; justify-content:center;
-    padding:16px;
+    display:flex; align-items:flex-end; justify-content:center; padding:16px;
   }
 
   .sheet.hidden{display:none !important;}
@@ -365,7 +373,7 @@
   .sheet-inner{
     background:var(--paper-2); border:1px solid var(--line);
     border-radius:3px; width:100%; max-width:488px;
-    max-height:76vh; overflow-y:auto;
+    max-height:78vh; overflow-y:auto;
     -webkit-overflow-scrolling:touch; padding:20px 18px 22px;
   }
 
@@ -378,6 +386,38 @@
     font-family:var(--mono); font-size:11px; letter-spacing:.14em;
     color:var(--ink-soft); margin:0 0 16px;
   }
+
+  /* ---------- 時段 checkbox ---------- */
+  .slots{display:flex; flex-direction:column; gap:8px; margin-bottom:20px;}
+
+  .chk{
+    display:flex; align-items:center; gap:11px;
+    padding:12px 13px; border:1px solid var(--line);
+    border-radius:2px; cursor:pointer; background:var(--paper);
+  }
+
+  .chk input{position:absolute; opacity:0; width:0; height:0;}
+
+  .chk .box{
+    flex:none; width:19px; height:19px;
+    border:1.5px solid var(--ink-soft);
+    border-radius:2px; background:transparent;
+    position:relative;
+  }
+
+  .chk input:checked + .box{background:var(--dip-5); border-color:var(--dip-5);}
+
+  .chk input:checked + .box::after{
+    content:""; position:absolute;
+    left:5.5px; top:1.5px; width:5px; height:10px;
+    border:solid var(--paper-2);
+    border-width:0 2px 2px 0;
+    transform:rotate(42deg);
+  }
+
+  .chk .lbl{font-size:15px;}
+  .chk .hint{margin-left:auto; font-family:var(--mono); font-size:10px; letter-spacing:.1em; color:var(--ink-soft);}
+  .chk input:checked ~ .lbl{font-weight:600;}
 
   .swatch-grid{display:grid; grid-template-columns:repeat(5,1fr); gap:7px; margin-bottom:6px;}
 
@@ -469,7 +509,7 @@
 
     <p class="eyebrow">Shared Calendar</p>
     <h1 class="title">夾日子</h1>
-    <p class="lede">每人撳低自己得閒嘅日子,名字會即刻出現喺日曆格入面。撳嘅人愈多,格底愈深。</p>
+    <p class="lede">撳日曆格,揀你全日得閒定係得夜晚。名字會即刻出現喺格入面,人愈多格底愈深。</p>
 
     <button class="btn btn-quiet hidden" id="btnBackRoom" style="margin-bottom:18px">返回原本房間</button>
 
@@ -550,8 +590,21 @@
 
     <div class="card" style="margin-top:24px">
       <h2>最多人得閒 <em>TOP 3</em></h2>
+
+      <div class="filterbar">
+        <span class="flabel">Filter</span>
+        <div class="segtoggle" id="segFilter">
+          <button type="button" data-f="all" class="on">全時段</button>
+          <button type="button" data-f="day">僅全日</button>
+        </div>
+      </div>
+
       <ul class="bars" id="bars"></ul>
       <p class="empty hidden" id="barsEmpty">仲未有人揀日子。撳上面日曆任何一格開始。</p>
+      <div class="keys" id="barKeys">
+        <span><i style="background:#A9C4D9"></i>全日</span>
+        <span><i style="background:var(--dip-5)"></i>夜晚</span>
+      </div>
     </div>
 
     <div class="foot">
@@ -567,12 +620,31 @@
 
 </div>
 
-<!-- 日子詳情 -->
+<!-- 日子詳情 + 時段選擇 -->
 <div class="sheet hidden" id="sheetDay">
   <div class="sheet-inner">
     <h3 id="sheetDayTitle">—</h3>
     <p class="sheet-sub" id="sheetDaySub">—</p>
+
+    <div class="slots">
+      <label class="chk">
+        <input type="checkbox" id="chkDay">
+        <span class="box"></span>
+        <span class="lbl">全日得閒</span>
+        <span class="hint">整日</span>
+      </label>
+      <label class="chk">
+        <input type="checkbox" id="chkNight">
+        <span class="box"></span>
+        <span class="lbl">🌙 夜晚得閒</span>
+        <span class="hint">只限夜晚</span>
+      </label>
+    </div>
+
+    <p class="side-label">當日得閒嘅人</p>
     <div class="members" id="sheetDayList"></div>
+    <p class="empty hidden" id="sheetDayEmpty">仲未有人揀呢日。</p>
+
     <button class="btn btn-quiet" id="sheetDayClose" style="margin-top:20px">收埋</button>
   </div>
 </div>
@@ -636,7 +708,7 @@ const state = {
   room:null, me:"", votes:[], members:[],
   cursor:new Date(), channel:null,
   rtStatus:"未連線", lastSync:null, lastError:"",
-  busy:new Set(), pollTimer:null
+  busy:new Set(), pollTimer:null, openKey:null, filter:"all"
 };
 
 /* =====================================================
@@ -688,6 +760,7 @@ function diag(){
     "成員人數  "+state.members.length+"\n"+
     "成員      "+(state.members.map(m=>m.name).join("、")||"—")+"\n"+
     "紀錄總數  "+state.votes.length+"\n"+
+    "其中全日  "+state.votes.filter(v=>v.slot!=="night").length+"\n"+
     "上次同步  "+t+"\n"+
     "最後錯誤  "+(state.lastError||"無");
   $("diagRoom").textContent=txt;
@@ -695,7 +768,7 @@ function diag(){
 }
 
 /* =====================================================
-   左欄:已加入房間清單
+   左欄
    ===================================================== */
 function getRooms(){
   try{ return JSON.parse(store.get("myRooms")||"[]"); }catch(e){ return []; }
@@ -871,13 +944,15 @@ async function doJoin(code,name){
 }
 
 async function enterRoom(room){
-  // 先清走上一個房間嘅連線
   stopPolling();
   if(state.channel){ db.removeChannel(state.channel); state.channel=null; }
 
   state.room=room;
   state.votes=[]; state.members=[];
   state.cursor=new Date();
+  state.openKey=null;
+  $("sheetDay").classList.add("hidden");
+
   store.set("lastRoom",room.room_code);
   rememberRoom(room,state.me);
 
@@ -908,7 +983,7 @@ async function enterRoom(room){
 $("btnLeave").addEventListener("click", ()=>{
   stopPolling();
   if(state.channel){ db.removeChannel(state.channel); state.channel=null; }
-  state.room=null; state.votes=[]; state.members=[]; state.rtStatus="未連線";
+  state.room=null; state.votes=[]; state.members=[]; state.rtStatus="未連線"; state.openKey=null;
   store.del("lastRoom");
   history.replaceState(null,"",location.pathname);
   $("view-room").classList.add("hidden");
@@ -923,7 +998,7 @@ $("btnLeave").addEventListener("click", ()=>{
    ===================================================== */
 async function loadData(){
   const [v,m]=await Promise.all([
-    db.from("votes").select("name, vote_date").eq("room_id",state.room.id),
+    db.from("votes").select("name, vote_date, slot").eq("room_id",state.room.id),
     db.from("members").select("name, color, created_at").eq("room_id",state.room.id)
       .order("created_at",{ascending:true})
   ]);
@@ -934,7 +1009,7 @@ async function loadData(){
     return false;
   }
 
-  state.votes=v.data||[];
+  state.votes=(v.data||[]).map(r=>({name:r.name,vote_date:r.vote_date,slot:r.slot||"day"}));
   state.members=m.data||[];
   state.lastSync=new Date();
   state.lastError="";
@@ -997,33 +1072,37 @@ function subscribe(){
 }
 
 /* =====================================================
-   投票
+   投票:slot 為 "day" / "night" / null(取消)
    ===================================================== */
-async function toggleVote(key){
+function mySlot(key){
+  const v=state.votes.find(x=>x.vote_date===key && x.name===state.me);
+  return v ? v.slot : null;
+}
+
+async function setVote(key,slot){
   if(state.busy.has(key)) return;
   state.busy.add(key);
 
-  const mine=state.votes.some(v=>v.vote_date===key && v.name===state.me);
-
-  if(mine){
-    state.votes=state.votes.filter(v=>!(v.vote_date===key && v.name===state.me));
-  }else{
-    state.votes=state.votes.concat([{name:state.me,vote_date:key}]);
-  }
+  const before=state.votes.slice();
+  state.votes=state.votes.filter(v=>!(v.vote_date===key && v.name===state.me));
+  if(slot) state.votes.push({name:state.me,vote_date:key,slot});
   render();
 
   try{
-    if(mine){
+    if(!slot){
       const {error}=await db.from("votes").delete()
         .eq("room_id",state.room.id).eq("name",state.me).eq("vote_date",key);
       if(error) throw error;
     }else{
-      const {error}=await db.from("votes")
-        .insert({room_id:state.room.id,name:state.me,vote_date:key});
-      if(error && error.code!=="23505") throw error;
+      const {error}=await db.from("votes").upsert(
+        {room_id:state.room.id,name:state.me,vote_date:key,slot},
+        {onConflict:"room_id,name,vote_date"}
+      );
+      if(error) throw error;
     }
     state.lastError=""; diag();
   }catch(e){
+    state.votes=before;
     state.lastError=errText(e); diag();
     toast("儲存失敗:"+state.lastError,true);
     await refresh();
@@ -1087,46 +1166,88 @@ async function pickColor(hex){
 
 $("sheetColorClose").addEventListener("click",()=>$("sheetColor").classList.add("hidden"));
 $("sheetColor").addEventListener("click",e=>{ if(e.target.id==="sheetColor") $("sheetColor").classList.add("hidden"); });
-$("sheetDayClose").addEventListener("click",()=>$("sheetDay").classList.add("hidden"));
-$("sheetDay").addEventListener("click",e=>{ if(e.target.id==="sheetDay") $("sheetDay").classList.add("hidden"); });
+
+$("sheetDayClose").addEventListener("click",closeDay);
+$("sheetDay").addEventListener("click",e=>{ if(e.target.id==="sheetDay") closeDay(); });
+
+function closeDay(){
+  state.openKey=null;
+  $("sheetDay").classList.add("hidden");
+}
 
 /* =====================================================
-   日子詳情
+   日子詳情 + 時段
    ===================================================== */
-function openDay(key,names){
+function openDay(key){
+  state.openKey=key;
+  $("sheetDay").classList.remove("hidden");
+  paintDay();
+}
+
+function paintDay(){
+  const key=state.openKey;
+  if(!key) return;
+
   const [yy,mm,dd]=key.split("-").map(Number);
   const w=WEEK_TC[new Date(yy,mm-1,dd).getDay()];
+  const rows=state.votes.filter(v=>v.vote_date===key);
+  const order=new Map(state.members.map((m,i)=>[m.name,i]));
+  rows.sort((a,b)=>(order.has(a.name)?order.get(a.name):999)-(order.has(b.name)?order.get(b.name):999));
+
+  const nDay=rows.filter(r=>r.slot==="day").length;
+  const nNight=rows.filter(r=>r.slot==="night").length;
+
   $("sheetDayTitle").textContent=mm+" 月 "+dd+" 日";
-  $("sheetDaySub").textContent="星期"+w+" · "+names.length+" 人得閒";
+  $("sheetDaySub").textContent="星期"+w+" · 全日 "+nDay+" 人 · 夜晚 "+nNight+" 人";
+
+  const cur=mySlot(key);
+  $("chkDay").checked   = cur==="day";
+  $("chkNight").checked = cur==="night";
 
   const list=$("sheetDayList");
   list.innerHTML="";
-  names.forEach(n=>list.appendChild(memberChip(n)));
-  $("sheetDay").classList.remove("hidden");
+  $("sheetDayEmpty").classList.toggle("hidden",rows.length>0);
+  rows.forEach(r=>list.appendChild(memberChip(r.name,false,r.slot==="night")));
 }
 
-function memberChip(name,isSelf){
+$("chkDay").addEventListener("change",()=>{
+  const key=state.openKey;
+  if(!key) return;
+  const on=$("chkDay").checked;
+  if(on) $("chkNight").checked=false;
+  setVote(key,on?"day":null);
+});
+
+$("chkNight").addEventListener("change",()=>{
+  const key=state.openKey;
+  if(!key) return;
+  const on=$("chkNight").checked;
+  if(on) $("chkDay").checked=false;
+  setVote(key,on?"night":null);
+});
+
+function memberChip(name,isSelf,isNight){
   const c=colorOf(name);
   const el=document.createElement("span");
   el.className="mchip"+(isSelf?" self":"");
   el.style.background=c;
   el.style.color=textOn(c);
-  el.textContent=name;
+  el.textContent=(isNight?"🌙 ":"")+name;
   return el;
 }
 
 /* =====================================================
-   畫面
+   統計
    ===================================================== */
 function tally(){
   const map=new Map();
   const order=new Map(state.members.map((m,i)=>[m.name,i]));
   for(const v of state.votes){
     if(!map.has(v.vote_date)) map.set(v.vote_date,[]);
-    map.get(v.vote_date).push(v.name);
+    map.get(v.vote_date).push(v);
   }
   for(const arr of map.values()){
-    arr.sort((a,b)=>(order.has(a)?order.get(a):999)-(order.has(b)?order.get(b):999));
+    arr.sort((a,b)=>(order.has(a.name)?order.get(a.name):999)-(order.has(b.name)?order.get(b.name):999));
   }
   return map;
 }
@@ -1137,6 +1258,7 @@ function render(){
   renderGrid(map);
   renderBars(map);
   renderRoomList();
+  paintDay();
 }
 
 function renderMembers(){
@@ -1147,7 +1269,7 @@ function renderMembers(){
 
   state.members.forEach(m=>{
     const isSelf=m.name===state.me;
-    const chip=memberChip(m.name,isSelf);
+    const chip=memberChip(m.name,isSelf,false);
     if(isSelf) chip.addEventListener("click",openPalette);
     box.appendChild(chip);
   });
@@ -1171,9 +1293,9 @@ function renderGrid(map){
 
   for(let d=1;d<=days;d++){
     const key=dateKey(y,m,d);
-    const names=map.get(key)||[];
-    const count=names.length;
-    const mine=names.includes(state.me);
+    const rows=map.get(key)||[];
+    const count=rows.length;
+    const mine=rows.some(r=>r.name===state.me);
 
     const cell=document.createElement("div");
     cell.className="cell"
@@ -1192,15 +1314,17 @@ function renderGrid(map){
     if(count){
       const box=document.createElement("div");
       box.className="chips";
-      const shown=count>MAX_CHIPS ? names.slice(0,MAX_CHIPS-1) : names;
+      const shown=count>MAX_CHIPS ? rows.slice(0,MAX_CHIPS-1) : rows;
 
-      shown.forEach(n=>{
-        const c=colorOf(n);
+      shown.forEach(r=>{
+        const c=colorOf(r.name);
         const s=document.createElement("span");
         s.className="chip";
         s.style.background=c;
         s.style.color=textOn(c);
-        s.textContent=n.length>3 ? n.slice(0,3) : n;
+        s.textContent = r.slot==="night"
+          ? "🌙"+r.name.slice(0,2)
+          : r.name.slice(0,3);
         box.appendChild(s);
       });
 
@@ -1208,50 +1332,94 @@ function renderGrid(map){
         const more=document.createElement("span");
         more.className="chip more";
         more.textContent="＋"+(count-(MAX_CHIPS-1));
-        more.addEventListener("click",ev=>{ ev.stopPropagation(); openDay(key,names); });
         box.appendChild(more);
       }
       cell.appendChild(box);
     }
 
-    cell.addEventListener("click",()=>toggleVote(key));
+    cell.addEventListener("click",()=>openDay(key));
     cell.addEventListener("keydown",e=>{
-      if(e.key==="Enter"||e.key===" "){ e.preventDefault(); toggleVote(key); }
+      if(e.key==="Enter"||e.key===" "){ e.preventDefault(); openDay(key); }
     });
     grid.appendChild(cell);
   }
 }
 
-function renderBars(map){
-  const rows=[...map.entries()]
-    .filter(([,n])=>n.length>0)
-    .sort((a,b)=>b[1].length-a[1].length || a[0].localeCompare(b[0]))
-    .slice(0,3);
+/* 長條圖:淺藍=全日,深藍=夜晚,寬度按人數比例,數字寫喺色塊內右側 */
+const LABEL_MIN_PCT = 11;   // 太窄就唔寫數字,免得剪爛
 
+function drawBars(rows){
   const ul=$("bars");
   ul.innerHTML="";
   $("barsEmpty").classList.toggle("hidden",rows.length>0);
   if(!rows.length) return;
 
-  const top=rows[0][1].length;
+  const top=rows[0].total;
 
-  rows.forEach(([key,names],i)=>{
-    const [yy,mm,dd]=key.split("-").map(Number);
+  rows.forEach((r,i)=>{
+    const [yy,mm,dd]=r.key.split("-").map(Number);
     const w=WEEK_TC[new Date(yy,mm-1,dd).getDay()];
+
     const li=document.createElement("li");
     li.innerHTML=
       '<div class="barhead">'+
         '<span class="rk">'+String(i+1).padStart(2,"0")+'</span>'+
         '<span class="dt">'+mm+'/'+dd+'</span>'+
         '<span class="wd">星期'+w+'</span>'+
-        '<span class="ct">'+names.length+' 人</span>'+
+        '<span class="ct">'+r.total+' 人</span>'+
       '</div>'+
-      '<div class="track"><div class="fill"></div></div>';
+      '<div class="track">'+
+        '<div class="seg day"></div>'+
+        '<div class="seg night"></div>'+
+      '</div>';
     ul.appendChild(li);
-    const fill=li.querySelector(".fill");
-    requestAnimationFrame(()=>{ fill.style.width=Math.round(names.length/top*100)+"%"; });
+
+    const dayPct   = r.dayCount   / top * 100;
+    const nightPct = r.nightCount / top * 100;
+
+    const segDay=li.querySelector(".seg.day");
+    const segNight=li.querySelector(".seg.night");
+
+    if(r.dayCount   && dayPct   >= LABEL_MIN_PCT) segDay.textContent   = r.dayCount;
+    if(r.nightCount && nightPct >= LABEL_MIN_PCT) segNight.textContent = r.nightCount;
+
+    requestAnimationFrame(()=>{
+      segDay.style.width   = dayPct.toFixed(2)+"%";
+      segNight.style.width = nightPct.toFixed(2)+"%";
+    });
   });
 }
+
+function renderBars(map){
+  const all=[...map.entries()].map(([key,rows])=>{
+    const dayCount=rows.filter(r=>r.slot==="day").length;
+    const nightCount=rows.filter(r=>r.slot==="night").length;
+    return {key,dayCount,nightCount,total:dayCount+nightCount};
+  });
+
+  let rows;
+  if(state.filter==="day"){
+    // 僅全日:只計、只顯示全日嗰批
+    rows=all.filter(r=>r.dayCount>0)
+      .map(r=>({key:r.key,dayCount:r.dayCount,nightCount:0,total:r.dayCount}))
+      .sort((a,b)=>b.total-a.total || a.key.localeCompare(b.key));
+  }else{
+    rows=all.filter(r=>r.total>0)
+      .sort((a,b)=>b.total-a.total || a.key.localeCompare(b.key));
+  }
+
+  $("barKeys").classList.toggle("hidden",state.filter==="day");
+  drawBars(rows.slice(0,3));
+}
+
+$("segFilter").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-f]");
+  if(!b) return;
+  state.filter = b.dataset.f;
+  [...$("segFilter").querySelectorAll("button")]
+    .forEach(x=>x.classList.toggle("on",x===b));
+  renderBars(tally());
+});
 
 /* =====================================================
    月份 / 分享
