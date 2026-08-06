@@ -16,6 +16,7 @@
     --line:#C8CAC3;
     --seal:#B33A2B;
     --dip-5:#1B3A63;
+    --side-w:262px;
     --serif:"Noto Serif TC", serif;
     --mono:"IBM Plex Mono", ui-monospace, monospace;
     --sans:-apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", sans-serif;
@@ -34,8 +35,119 @@
     padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
   }
 
-  .wrap{max-width:520px; margin:0 auto; padding:24px 18px 64px;}
+  .wrap{max-width:520px; margin:0 auto; padding:16px 18px 64px;}
 
+  /* ---------- 左欄 ---------- */
+  .side{
+    position:fixed;
+    left:0; top:0; bottom:0;
+    width:var(--side-w);
+    background:var(--paper-2);
+    border-right:1px solid var(--line);
+    z-index:70;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    padding:20px 16px calc(20px + env(safe-area-inset-bottom));
+    transform:translateX(-100%);
+    transition:transform .28s cubic-bezier(.3,.8,.3,1);
+  }
+
+  .side.open{transform:none;}
+
+  .side-head{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:26px;
+  }
+
+  .side-head .brand{
+    font-family:var(--serif); font-weight:700;
+    font-size:19px; letter-spacing:.06em;
+  }
+
+  .side-close{
+    background:none; border:none; font-size:24px; line-height:1;
+    color:var(--ink-soft); cursor:pointer; padding:0 4px;
+  }
+
+  .side-label{
+    font-family:var(--mono); font-size:10px; letter-spacing:.18em;
+    text-transform:uppercase; color:var(--ink-soft);
+    margin:0 0 9px;
+  }
+
+  .roomlist{list-style:none; margin:0 0 20px; padding:0;}
+
+  .roomlist li{display:flex; align-items:stretch; gap:4px; margin-bottom:5px;}
+
+  .roomlist .go{
+    flex:1; text-align:left; background:transparent;
+    border:1px solid var(--line); border-radius:2px;
+    padding:9px 10px; cursor:pointer; color:var(--ink);
+    font-family:var(--sans); font-size:14px; line-height:1.35;
+    overflow:hidden;
+  }
+
+  .roomlist .go:active{background:rgba(0,0,0,.05);}
+
+  .roomlist .go b{
+    display:block; font-weight:600;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+
+  .roomlist .go small{
+    display:block; font-family:var(--mono);
+    font-size:10px; letter-spacing:.16em; color:var(--ink-soft); margin-top:1px;
+  }
+
+  .roomlist li.active .go{
+    background:var(--dip-5); border-color:var(--dip-5); color:var(--paper-2);
+  }
+
+  .roomlist li.active .go small{color:rgba(243,244,240,.72);}
+
+  .roomlist .drop{
+    flex:none; width:30px; background:transparent;
+    border:1px solid var(--line); border-radius:2px;
+    color:var(--ink-soft); font-size:15px; cursor:pointer; padding:0;
+  }
+
+  .roomlist .drop:active{background:rgba(0,0,0,.05);}
+
+  .scrim{
+    position:fixed; inset:0; z-index:65;
+    background:rgba(20,28,43,.4);
+    opacity:0; pointer-events:none;
+    transition:opacity .28s ease;
+  }
+
+  .scrim.open{opacity:1; pointer-events:auto;}
+
+  .topbar{display:flex; align-items:center; gap:10px; margin-bottom:14px;}
+
+  .menubtn{
+    flex:none; width:38px; height:38px;
+    border:1px solid var(--line); background:var(--paper-2);
+    border-radius:2px; cursor:pointer;
+    display:flex; flex-direction:column; justify-content:center;
+    align-items:center; gap:3px; padding:0;
+  }
+
+  .menubtn i{display:block; width:15px; height:1.5px; background:var(--ink);}
+
+  .topbar .crumb{
+    font-family:var(--mono); font-size:10px;
+    letter-spacing:.16em; color:var(--ink-soft);
+  }
+
+  @media (min-width:980px){
+    .side{transform:none; box-shadow:none;}
+    .side-close{display:none;}
+    .scrim{display:none !important;}
+    body{padding-left:var(--side-w);}
+    .menubtn{display:none;}
+  }
+
+  /* ---------- 共用 ---------- */
   .eyebrow{
     font-family:var(--mono); font-size:11px; letter-spacing:.22em;
     text-transform:uppercase; color:var(--ink-soft); margin:0 0 6px;
@@ -77,6 +189,7 @@
   .btn[disabled]{opacity:.5; cursor:default;}
   .btn-quiet{background:transparent; color:var(--ink); border:1px solid var(--line);}
   .btn-quiet:active{background:rgba(0,0,0,.05);}
+  .btn-sm{padding:10px; font-size:13px;}
 
   .divider{
     display:flex; align-items:center; gap:12px; margin:28px 0;
@@ -222,11 +335,7 @@
     font-family:var(--mono); font-size:12px; margin-bottom:5px;
   }
 
-  .barhead .rk{
-    font-size:10px; letter-spacing:.16em; color:var(--ink-soft);
-    width:22px; flex:none;
-  }
-
+  .barhead .rk{font-size:10px; letter-spacing:.16em; color:var(--ink-soft); width:22px; flex:none;}
   .barhead .dt{font-weight:600;}
   .barhead .wd{font-size:10px; color:var(--ink-soft); letter-spacing:.1em;}
   .barhead .ct{margin-left:auto; font-weight:600; color:var(--dip-5);}
@@ -234,8 +343,7 @@
   .track{height:16px; background:#E1E3DE; border-radius:1px; overflow:hidden;}
 
   .fill{
-    height:100%; width:0;
-    background:var(--dip-5);
+    height:100%; width:0; background:var(--dip-5);
     transition:width .6s cubic-bezier(.22,.8,.3,1);
   }
 
@@ -244,9 +352,9 @@
 
   .empty{color:var(--ink-soft); font-size:13px; margin:0;}
 
-  /* ---------- 詳情 / 調色 ---------- */
+  /* ---------- 彈出層 ---------- */
   .sheet{
-    position:fixed; inset:0; z-index:60;
+    position:fixed; inset:0; z-index:90;
     background:rgba(20,28,43,.45);
     display:flex; align-items:flex-end; justify-content:center;
     padding:16px;
@@ -300,7 +408,7 @@
     background:var(--ink); color:var(--paper); font-size:13px;
     padding:10px 18px; border-radius:2px; opacity:0;
     pointer-events:none; transition:opacity .25s ease, transform .25s ease;
-    z-index:80; max-width:88vw; text-align:center;
+    z-index:95; max-width:88vw; text-align:center;
   }
 
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
@@ -333,19 +441,37 @@
 </head>
 <body>
 
+<!-- ================= 左欄 ================= -->
+<aside class="side" id="side">
+  <div class="side-head">
+    <span class="brand">夾日子</span>
+    <button class="side-close" id="sideClose" aria-label="收埋">×</button>
+  </div>
+
+  <p class="side-label">切換房間</p>
+  <ul class="roomlist" id="roomList"></ul>
+  <p class="empty hidden" id="roomListEmpty" style="margin-bottom:20px">仲未加入過任何房間。</p>
+
+  <p class="side-label">新增房間</p>
+  <button class="btn btn-quiet btn-sm" id="btnNewRoom">建立 / 加入房間</button>
+</aside>
+
+<div class="scrim" id="scrim"></div>
+
 <div class="wrap">
 
   <!-- ================= 入口 ================= -->
   <section id="view-home">
+    <div class="topbar">
+      <button class="menubtn" id="menuHome" aria-label="開啟選單"><i></i><i></i><i></i></button>
+      <span class="crumb">房間選單</span>
+    </div>
+
     <p class="eyebrow">Shared Calendar</p>
     <h1 class="title">夾日子</h1>
     <p class="lede">每人撳低自己得閒嘅日子,名字會即刻出現喺日曆格入面。撳嘅人愈多,格底愈深。</p>
 
-    <div class="card" id="resumeCard" style="display:none">
-      <h2>返回上次嘅房間</h2>
-      <p class="empty" id="resumeInfo">—</p>
-      <button class="btn" id="btnResume" style="margin-top:14px">繼續</button>
-    </div>
+    <button class="btn btn-quiet hidden" id="btnBackRoom" style="margin-bottom:18px">返回原本房間</button>
 
     <div class="card">
       <h2>加入房間</h2>
@@ -383,6 +509,11 @@
 
   <!-- ================= 房間 ================= -->
   <section id="view-room" class="hidden">
+    <div class="topbar">
+      <button class="menubtn" id="menuRoom" aria-label="開啟選單"><i></i><i></i><i></i></button>
+      <span class="crumb">切換房間</span>
+    </div>
+
     <div class="roomhead">
       <div>
         <h1 id="roomTitle">—</h1>
@@ -425,7 +556,7 @@
 
     <div class="foot">
       <button class="btn btn-quiet" id="btnShare">複製邀請連結</button>
-      <button class="btn btn-quiet" id="btnLeave">離開房間</button>
+      <button class="btn btn-quiet" id="btnLeave">返回首頁</button>
     </div>
 
     <details class="diag">
@@ -467,7 +598,7 @@ const SUPABASE_URL  = "https://nyfcryfwodvlqtnobxop.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55ZmNyeWZ3b2R2bHF0bm9ieG9wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4MjkyMjcsImV4cCI6MjEwMTQwNTIyN30.nyuF-Az8qGQjFgUWvb0dD_2GTo1Jz35WXsWV8jljubE";
 
 const POLL_MS = 8000;
-const MAX_CHIPS = 6;   // 一格最多排幾多個名
+const MAX_CHIPS = 6;
 
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -564,7 +695,94 @@ function diag(){
 }
 
 /* =====================================================
-   成員:加入時自動派一隻未用嘅顏色
+   左欄:已加入房間清單
+   ===================================================== */
+function getRooms(){
+  try{ return JSON.parse(store.get("myRooms")||"[]"); }catch(e){ return []; }
+}
+
+function saveRooms(arr){ store.set("myRooms",JSON.stringify(arr)); }
+
+function rememberRoom(room,name){
+  const rest=getRooms().filter(r=>r.code!==room.room_code);
+  rest.unshift({code:room.room_code,title:room.title||"未命名房間",name});
+  saveRooms(rest.slice(0,24));
+  renderRoomList();
+}
+
+function forgetRoom(code){
+  saveRooms(getRooms().filter(r=>r.code!==code));
+  renderRoomList();
+  toast("已從清單移除(房間資料仍然保留)");
+}
+
+function renderRoomList(){
+  const rooms=getRooms();
+  const ul=$("roomList");
+  ul.innerHTML="";
+  $("roomListEmpty").classList.toggle("hidden",rooms.length>0);
+
+  rooms.forEach(r=>{
+    const li=document.createElement("li");
+    if(state.room && state.room.room_code===r.code) li.className="active";
+
+    const go=document.createElement("button");
+    go.type="button";
+    go.className="go";
+    go.innerHTML="<b></b><small></small>";
+    go.querySelector("b").textContent=r.title;
+    go.querySelector("small").textContent=r.code+" · "+r.name;
+    go.addEventListener("click",()=>switchRoom(r.code,r.name));
+
+    const drop=document.createElement("button");
+    drop.type="button";
+    drop.className="drop";
+    drop.textContent="×";
+    drop.setAttribute("aria-label","從清單移除");
+    drop.addEventListener("click",ev=>{ ev.stopPropagation(); forgetRoom(r.code); });
+
+    li.appendChild(go);
+    li.appendChild(drop);
+    ul.appendChild(li);
+  });
+}
+
+function openSide(){ $("side").classList.add("open"); $("scrim").classList.add("open"); }
+function closeSide(){ $("side").classList.remove("open"); $("scrim").classList.remove("open"); }
+
+$("menuHome").addEventListener("click",openSide);
+$("menuRoom").addEventListener("click",openSide);
+$("sideClose").addEventListener("click",closeSide);
+$("scrim").addEventListener("click",closeSide);
+
+$("btnNewRoom").addEventListener("click",()=>{
+  closeSide();
+  $("view-room").classList.add("hidden");
+  $("view-home").classList.remove("hidden");
+  $("btnBackRoom").classList.toggle("hidden",!state.room);
+  window.scrollTo(0,0);
+});
+
+$("btnBackRoom").addEventListener("click",()=>{
+  if(!state.room) return;
+  $("view-home").classList.add("hidden");
+  $("view-room").classList.remove("hidden");
+  window.scrollTo(0,0);
+});
+
+async function switchRoom(code,name){
+  closeSide();
+  if(state.room && state.room.room_code===code){
+    $("view-home").classList.add("hidden");
+    $("view-room").classList.remove("hidden");
+    window.scrollTo(0,0);
+    return;
+  }
+  await doJoin(code,name);
+}
+
+/* =====================================================
+   成員登記
    ===================================================== */
 async function ensureMember(roomId,name){
   const {data:existing,error:e1}=await db.from("members")
@@ -586,7 +804,6 @@ async function ensureMember(roomId,name){
     if(!error) return data;
 
     if(error.code==="23505"){
-      // 可能係同名或同色撞咗,重新查一次
       const {data:again}=await db.from("members")
         .select().eq("room_id",roomId).eq("name",name).maybeSingle();
       if(again) return again;
@@ -654,15 +871,22 @@ async function doJoin(code,name){
 }
 
 async function enterRoom(room){
+  // 先清走上一個房間嘅連線
+  stopPolling();
+  if(state.channel){ db.removeChannel(state.channel); state.channel=null; }
+
   state.room=room;
+  state.votes=[]; state.members=[];
   state.cursor=new Date();
   store.set("lastRoom",room.room_code);
+  rememberRoom(room,state.me);
 
   $("view-home").classList.add("hidden");
   $("view-room").classList.remove("hidden");
   $("roomTitle").textContent=room.title||"未命名房間";
   $("roomWho").textContent="你係:"+state.me;
   $("roomCodeText").textContent=room.room_code;
+  window.scrollTo(0,0);
 
   if(location.hash!=="#r="+room.room_code){
     history.replaceState(null,"","#r="+room.room_code);
@@ -689,7 +913,9 @@ $("btnLeave").addEventListener("click", ()=>{
   history.replaceState(null,"",location.pathname);
   $("view-room").classList.add("hidden");
   $("view-home").classList.remove("hidden");
-  showResume();
+  $("btnBackRoom").classList.add("hidden");
+  renderRoomList();
+  window.scrollTo(0,0);
 });
 
 /* =====================================================
@@ -910,6 +1136,7 @@ function render(){
   renderMembers();
   renderGrid(map);
   renderBars(map);
+  renderRoomList();
 }
 
 function renderMembers(){
@@ -1053,32 +1280,22 @@ $("roomCode").addEventListener("click",shareLink);
 /* =====================================================
    啟動
    ===================================================== */
-function showResume(){
-  const name=store.get("myName");
-  const code=store.get("lastRoom");
-  if(name){ $("joinName").value=name; $("newName").value=name; }
-  if(name && code){
-    $("resumeCard").style.display="block";
-    $("resumeInfo").textContent="房間 "+code+" · 你係 "+name;
-    $("btnResume").onclick=()=>doJoin(code,name);
-  }else{
-    $("resumeCard").style.display="none";
-  }
-}
-
 (async function init(){
-  showResume();
+  renderRoomList();
   diag();
 
-  const hashCode=(location.hash.match(/r=([A-Za-z0-9]{6})/)||[])[1];
   const savedName=store.get("myName");
+  if(savedName){ $("joinName").value=savedName; $("newName").value=savedName; }
+
+  const hashCode=(location.hash.match(/r=([A-Za-z0-9]{6})/)||[])[1];
   const savedRoom=store.get("lastRoom");
   const code=(hashCode||savedRoom||"").toUpperCase();
 
   if(code) $("joinCode").value=code;
 
   if(code && savedName){
-    await doJoin(code,savedName);
+    const known=getRooms().find(r=>r.code===code);
+    await doJoin(code, known ? known.name : savedName);
   }else if(code){
     setTimeout(()=>$("joinName").focus(),300);
   }
