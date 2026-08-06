@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>夾日子</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Serif+TC:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EAEBE6;
+    --paper-2:#F3F4F0;
+    --ink:#141C2B;
+    --ink-soft:#5C6675;
+    --line:#C8CAC3;
+    --seal:#B33A2B;
+    --dip-5:#1B3A63;
+    --serif:"Noto Serif TC", serif;
+    --mono:"IBM Plex Mono", ui-monospace, monospace;
+    --sans:-apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", sans-serif;
+  }
+
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--sans);
+    font-size:15px;
+    line-height:1.6;
+    min-height:100vh;
+    padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  }
+
+  .wrap{max-width:520px; margin:0 auto; padding:24px 18px 64px;}
+
+  .eyebrow{
+    font-family:var(--mono); font-size:11px; letter-spacing:.22em;
+    text-transform:uppercase; color:var(--ink-soft); margin:0 0 6px;
+  }
+
+  .title{
+    font-family:var(--serif); font-weight:700; font-size:34px;
+    line-height:1.15; letter-spacing:.04em; margin:0 0 10px;
+  }
+
+  .lede{color:var(--ink-soft); margin:0 0 28px; font-size:14px;}
+
+  .field{margin-bottom:16px;}
+
+  .field label{
+    display:block; font-family:var(--mono); font-size:11px;
+    letter-spacing:.16em; text-transform:uppercase;
+    color:var(--ink-soft); margin-bottom:6px;
+  }
+
+  .field input{
+    width:100%; padding:12px 14px; font-size:16px;
+    font-family:var(--sans); color:var(--ink);
+    background:var(--paper-2); border:1px solid var(--line);
+    border-radius:2px; outline:none;
+  }
+
+  .field input:focus{border-color:var(--dip-5); box-shadow:0 0 0 2px rgba(27,58,99,.16);}
+  .field input.code{font-family:var(--mono); letter-spacing:.3em; text-transform:uppercase;}
+
+  .btn{
+    display:block; width:100%; padding:14px;
+    font-family:var(--sans); font-size:15px; font-weight:600;
+    letter-spacing:.06em; color:var(--paper-2); background:var(--dip-5);
+    border:none; border-radius:2px; cursor:pointer;
+  }
+
+  .btn:active{opacity:.8;}
+  .btn[disabled]{opacity:.5; cursor:default;}
+  .btn-quiet{background:transparent; color:var(--ink); border:1px solid var(--line);}
+  .btn-quiet:active{background:rgba(0,0,0,.05);}
+
+  .divider{
+    display:flex; align-items:center; gap:12px; margin:28px 0;
+    font-family:var(--mono); font-size:11px; letter-spacing:.2em; color:var(--ink-soft);
+  }
+
+  .divider::before,.divider::after{content:""; flex:1; height:1px; background:var(--line);}
+
+  .card{
+    background:var(--paper-2); border:1px solid var(--line);
+    border-radius:2px; padding:20px 18px;
+  }
+
+  .card + .card{margin-top:18px;}
+
+  .card h2{
+    font-family:var(--serif); font-weight:500; font-size:19px;
+    letter-spacing:.05em; margin:0 0 14px;
+    display:flex; align-items:baseline; gap:8px;
+  }
+
+  .card h2 em{
+    font-style:normal; font-family:var(--mono);
+    font-size:11px; letter-spacing:.14em; color:var(--ink-soft);
+  }
+
+  /* ---------- 房間標頭 ---------- */
+  .roomhead{
+    display:flex; align-items:flex-start; justify-content:space-between;
+    gap:14px; padding-bottom:16px; border-bottom:1px solid var(--line); margin-bottom:14px;
+  }
+
+  .roomhead h1{
+    font-family:var(--serif); font-weight:700; font-size:24px;
+    letter-spacing:.04em; margin:0;
+  }
+
+  .roomhead .who{font-size:13px; color:var(--ink-soft); margin-top:4px;}
+
+  .seal{
+    flex:none; background:var(--seal); color:#F6EFE9;
+    font-family:var(--mono); font-weight:600; font-size:15px;
+    letter-spacing:.16em; padding:8px 10px; border-radius:2px;
+    text-align:center; cursor:pointer; border:none;
+  }
+
+  .seal small{display:block; font-size:8px; letter-spacing:.2em; opacity:.8; margin-bottom:2px;}
+
+  .statusbar{
+    display:flex; align-items:center; gap:10px; margin-bottom:16px;
+    font-family:var(--mono); font-size:10px; letter-spacing:.14em; color:var(--ink-soft);
+  }
+
+  .live{display:inline-flex; align-items:center; gap:6px;}
+  .live i{width:6px; height:6px; border-radius:50%; background:#6389AC; display:block; animation:pulse 2s infinite;}
+  .live.off i{background:var(--seal); animation:none;}
+
+  @keyframes pulse{0%,100%{opacity:1;} 50%{opacity:.25;}}
+
+  .statusbar .sync{
+    margin-left:auto; background:none; border:1px solid var(--line);
+    border-radius:2px; padding:4px 9px; font-family:var(--mono);
+    font-size:10px; letter-spacing:.14em; color:var(--ink-soft); cursor:pointer;
+  }
+
+  /* ---------- 成員 ---------- */
+  .members{display:flex; flex-wrap:wrap; gap:6px;}
+
+  .mchip{
+    display:inline-flex; align-items:center; gap:5px;
+    padding:5px 9px; border-radius:2px; font-size:13px;
+    border:1px solid rgba(0,0,0,.10);
+  }
+
+  .mchip.self{cursor:pointer; box-shadow:0 0 0 1.5px var(--ink);}
+  .mchip.self::after{content:"換色"; font-family:var(--mono); font-size:9px; letter-spacing:.1em; opacity:.75;}
+
+  /* ---------- 月份 ---------- */
+  .monthbar{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;}
+  .monthbar .m{font-family:var(--serif); font-weight:500; font-size:20px; letter-spacing:.06em;}
+
+  .navbtn{
+    width:38px; height:38px; border:1px solid var(--line);
+    background:var(--paper-2); color:var(--ink); font-size:15px;
+    border-radius:2px; cursor:pointer;
+  }
+
+  .navbtn:active{background:rgba(0,0,0,.05);}
+
+  .dow{display:grid; grid-template-columns:repeat(7,1fr); gap:3px; margin-bottom:3px;}
+
+  .dow span{
+    text-align:center; font-family:var(--mono); font-size:10px;
+    letter-spacing:.12em; color:var(--ink-soft); padding:4px 0;
+  }
+
+  .grid{
+    display:grid; grid-template-columns:repeat(7,1fr);
+    gap:3px; grid-auto-rows:minmax(50px,auto);
+  }
+
+  .cell{
+    position:relative; border:1px solid var(--line);
+    background:var(--paper-2); border-radius:2px;
+    padding:4px 2px 5px; overflow:hidden; cursor:pointer;
+    font-family:var(--mono); color:var(--ink); display:block;
+    text-align:center;
+  }
+
+  .cell.blank{border-color:transparent; background:transparent; cursor:default;}
+  .cell.past{opacity:.5;}
+  .cell.mine{box-shadow:inset 0 0 0 1.5px var(--ink);}
+
+  .cell.lv1{background:#EDEFEC;}
+  .cell.lv2{background:#E4E9EC;}
+  .cell.lv3{background:#DAE2E9;}
+  .cell.lv4{background:#CFDBE6;}
+  .cell.lv5{background:#C3D3E2;}
+
+  .cell .d{display:block; font-size:13px; font-weight:500; line-height:1.2;}
+
+  .chips{display:flex; flex-direction:column; gap:1px; margin-top:3px;}
+
+  .chip{
+    display:block; font-size:8px; line-height:1.5;
+    letter-spacing:.02em; border-radius:1px;
+    padding:0 1px; overflow:hidden; white-space:nowrap;
+    font-family:var(--sans);
+  }
+
+  .chip.more{
+    background:transparent; color:var(--ink-soft);
+    font-family:var(--mono); border:1px dashed var(--line);
+  }
+
+  /* ---------- 長條圖 ---------- */
+  .bars{list-style:none; margin:0; padding:0;}
+  .bars li{margin-bottom:14px;}
+  .bars li:last-child{margin-bottom:0;}
+
+  .barhead{
+    display:flex; align-items:baseline; gap:8px;
+    font-family:var(--mono); font-size:12px; margin-bottom:5px;
+  }
+
+  .barhead .rk{
+    font-size:10px; letter-spacing:.16em; color:var(--ink-soft);
+    width:22px; flex:none;
+  }
+
+  .barhead .dt{font-weight:600;}
+  .barhead .wd{font-size:10px; color:var(--ink-soft); letter-spacing:.1em;}
+  .barhead .ct{margin-left:auto; font-weight:600; color:var(--dip-5);}
+
+  .track{height:16px; background:#E1E3DE; border-radius:1px; overflow:hidden;}
+
+  .fill{
+    height:100%; width:0;
+    background:var(--dip-5);
+    transition:width .6s cubic-bezier(.22,.8,.3,1);
+  }
+
+  .bars li:nth-child(2) .fill{background:#4A729B;}
+  .bars li:nth-child(3) .fill{background:#7FA0BC;}
+
+  .empty{color:var(--ink-soft); font-size:13px; margin:0;}
+
+  /* ---------- 詳情 / 調色 ---------- */
+  .sheet{
+    position:fixed; inset:0; z-index:60;
+    background:rgba(20,28,43,.45);
+    display:flex; align-items:flex-end; justify-content:center;
+    padding:16px;
+  }
+
+  .sheet.hidden{display:none !important;}
+
+  .sheet-inner{
+    background:var(--paper-2); border:1px solid var(--line);
+    border-radius:3px; width:100%; max-width:488px;
+    max-height:76vh; overflow-y:auto;
+    -webkit-overflow-scrolling:touch; padding:20px 18px 22px;
+  }
+
+  .sheet-inner h3{
+    font-family:var(--serif); font-weight:700; font-size:22px;
+    letter-spacing:.04em; margin:0 0 3px;
+  }
+
+  .sheet-sub{
+    font-family:var(--mono); font-size:11px; letter-spacing:.14em;
+    color:var(--ink-soft); margin:0 0 16px;
+  }
+
+  .swatch-grid{display:grid; grid-template-columns:repeat(5,1fr); gap:7px; margin-bottom:6px;}
+
+  .sw{
+    aspect-ratio:1/1; border-radius:2px; border:1px solid rgba(0,0,0,.12);
+    cursor:pointer; position:relative; padding:0;
+  }
+
+  .sw[disabled]{cursor:default; opacity:.4;}
+
+  .sw[disabled]::after{
+    content:""; position:absolute; inset:0;
+    background:linear-gradient(to top right, transparent 46%, var(--ink) 46%, var(--ink) 54%, transparent 54%);
+  }
+
+  .sw.current{box-shadow:0 0 0 2px var(--ink);}
+
+  .group-label{
+    font-family:var(--mono); font-size:10px; letter-spacing:.16em;
+    color:var(--ink-soft); margin:14px 0 7px;
+  }
+
+  .group-label:first-of-type{margin-top:0;}
+
+  .toast{
+    position:fixed; left:50%; bottom:24px;
+    transform:translateX(-50%) translateY(20px);
+    background:var(--ink); color:var(--paper); font-size:13px;
+    padding:10px 18px; border-radius:2px; opacity:0;
+    pointer-events:none; transition:opacity .25s ease, transform .25s ease;
+    z-index:80; max-width:88vw; text-align:center;
+  }
+
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  .toast.err{background:var(--seal);}
+
+  .foot{margin-top:32px; padding-top:16px; border-top:1px solid var(--line); display:flex; gap:10px;}
+  .foot button{flex:1; padding:11px; font-size:13px;}
+
+  details.diag{margin-top:20px;}
+
+  details.diag summary{
+    font-family:var(--mono); font-size:10px; letter-spacing:.16em;
+    color:var(--ink-soft); cursor:pointer; padding:6px 0;
+  }
+
+  details.diag pre{
+    font-family:var(--mono); font-size:11px; line-height:1.7;
+    background:var(--paper-2); border:1px solid var(--line);
+    padding:12px; border-radius:2px; overflow-x:auto;
+    white-space:pre-wrap; word-break:break-all;
+    margin:6px 0 0; color:var(--ink-soft);
+  }
+
+  .hidden{display:none !important;}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important; transition:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- ================= 入口 ================= -->
+  <section id="view-home">
+    <p class="eyebrow">Shared Calendar</p>
+    <h1 class="title">夾日子</h1>
+    <p class="lede">每人撳低自己得閒嘅日子,名字會即刻出現喺日曆格入面。撳嘅人愈多,格底愈深。</p>
+
+    <div class="card" id="resumeCard" style="display:none">
+      <h2>返回上次嘅房間</h2>
+      <p class="empty" id="resumeInfo">—</p>
+      <button class="btn" id="btnResume" style="margin-top:14px">繼續</button>
+    </div>
+
+    <div class="card">
+      <h2>加入房間</h2>
+      <div class="field">
+        <label for="joinCode">房間號碼</label>
+        <input id="joinCode" class="code" type="text" placeholder="ABC123" maxlength="6" autocomplete="off" autocapitalize="characters">
+      </div>
+      <div class="field">
+        <label for="joinName">你嘅名</label>
+        <input id="joinName" type="text" placeholder="例如:阿明" maxlength="12" autocomplete="off">
+      </div>
+      <button class="btn" id="btnJoin">加入</button>
+    </div>
+
+    <div class="divider">或</div>
+
+    <div class="card">
+      <h2>建立新房間</h2>
+      <div class="field">
+        <label for="newTitle">房間名稱</label>
+        <input id="newTitle" type="text" placeholder="例如:十月行山" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="newName">你嘅名</label>
+        <input id="newName" type="text" placeholder="例如:阿明" maxlength="12" autocomplete="off">
+      </div>
+      <button class="btn btn-quiet" id="btnCreate">建立房間</button>
+    </div>
+
+    <details class="diag">
+      <summary>連線診斷</summary>
+      <pre id="diagHome">未開始</pre>
+    </details>
+  </section>
+
+  <!-- ================= 房間 ================= -->
+  <section id="view-room" class="hidden">
+    <div class="roomhead">
+      <div>
+        <h1 id="roomTitle">—</h1>
+        <div class="who" id="roomWho">—</div>
+      </div>
+      <button class="seal" id="roomCode" title="複製邀請連結">
+        <small>CODE</small>
+        <span id="roomCodeText">——</span>
+      </button>
+    </div>
+
+    <div class="statusbar">
+      <span class="live" id="liveTag"><i></i><span>連線中</span></span>
+      <button class="sync" id="btnSync">重新載入</button>
+    </div>
+
+    <div class="card" style="margin-bottom:18px">
+      <h2>房間成員 <em id="memberCount">0</em></h2>
+      <div class="members" id="memberList"></div>
+      <p class="empty hidden" id="memberEmpty">仲未有人加入。</p>
+    </div>
+
+    <div class="monthbar">
+      <button class="navbtn" id="prevM" aria-label="上個月">←</button>
+      <div class="m" id="monthLabel">—</div>
+      <button class="navbtn" id="nextM" aria-label="下個月">→</button>
+    </div>
+
+    <div class="dow">
+      <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+    </div>
+
+    <div class="grid" id="grid"></div>
+
+    <div class="card" style="margin-top:24px">
+      <h2>最多人得閒 <em>TOP 3</em></h2>
+      <ul class="bars" id="bars"></ul>
+      <p class="empty hidden" id="barsEmpty">仲未有人揀日子。撳上面日曆任何一格開始。</p>
+    </div>
+
+    <div class="foot">
+      <button class="btn btn-quiet" id="btnShare">複製邀請連結</button>
+      <button class="btn btn-quiet" id="btnLeave">離開房間</button>
+    </div>
+
+    <details class="diag">
+      <summary>連線診斷</summary>
+      <pre id="diagRoom">—</pre>
+    </details>
+  </section>
+
+</div>
+
+<!-- 日子詳情 -->
+<div class="sheet hidden" id="sheetDay">
+  <div class="sheet-inner">
+    <h3 id="sheetDayTitle">—</h3>
+    <p class="sheet-sub" id="sheetDaySub">—</p>
+    <div class="members" id="sheetDayList"></div>
+    <button class="btn btn-quiet" id="sheetDayClose" style="margin-top:20px">收埋</button>
+  </div>
+</div>
+
+<!-- 調色 -->
+<div class="sheet hidden" id="sheetColor">
+  <div class="sheet-inner">
+    <h3>揀你嘅顏色</h3>
+    <p class="sheet-sub">打咗交叉嘅係其他人用緊</p>
+    <div id="paletteBody"></div>
+    <button class="btn btn-quiet" id="sheetColorClose" style="margin-top:20px">收埋</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* =====================================================
+   設定
+   ===================================================== */
+const SUPABASE_URL  = "https://nyfcryfwodvlqtnobxop.supabase.co";
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55ZmNyeWZ3b2R2bHF0bm9ieG9wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4MjkyMjcsImV4cCI6MjEwMTQwNTIyN30.nyuF-Az8qGQjFgUWvb0dD_2GTo1Jz35WXsWV8jljubE";
+
+const POLL_MS = 8000;
+const MAX_CHIPS = 6;   // 一格最多排幾多個名
+
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+/* =====================================================
+   色板
+   ===================================================== */
+const PALETTE = [
+  { group:"米調彩虹", colors:[
+    ["#C4705F","赤"],["#CE8F5B","橙"],["#C9AC5E","黃"],["#8A9C6B","綠"],
+    ["#6E96A0","青"],["#6B84A8","藍"],["#96789C","紫"]
+  ]},
+  { group:"米調淺色", colors:[
+    ["#E8BFB6","粉紅"],["#EDCBAB","粉橙"],["#E7DCB0","粉黃"],["#C6D2B8","粉綠"],
+    ["#B9D0D3","粉青"],["#BCC7DC","粉藍"],["#D3C2D6","粉紫"]
+  ]},
+  { group:"黑白灰", colors:[
+    ["#1F1F1D","黑"],["#4A4A46","深灰"],["#8A8A83","灰"],
+    ["#C3C3BC","淺灰"],["#F7F6F1","白"]
+  ]}
+];
+
+const ALL_COLORS = PALETTE.flatMap(g => g.colors.map(c => c[0]));
+
+function textOn(hex){
+  const r=parseInt(hex.slice(1,3),16),
+        g=parseInt(hex.slice(3,5),16),
+        b=parseInt(hex.slice(5,7),16);
+  return (0.299*r + 0.587*g + 0.114*b) > 150 ? "#1F1F1D" : "#F7F6F1";
+}
+
+/* =====================================================
+   狀態
+   ===================================================== */
+const state = {
+  room:null, me:"", votes:[], members:[],
+  cursor:new Date(), channel:null,
+  rtStatus:"未連線", lastSync:null, lastError:"",
+  busy:new Set(), pollTimer:null
+};
+
+/* =====================================================
+   小工具
+   ===================================================== */
+const $ = id => document.getElementById(id);
+const pad = n => String(n).padStart(2,"0");
+const dateKey = (y,m,d) => `${y}-${pad(m+1)}-${pad(d)}`;
+const todayKey = (()=>{const t=new Date();return dateKey(t.getFullYear(),t.getMonth(),t.getDate());})();
+const WEEK_TC = ["日","一","二","三","四","五","六"];
+
+const store = {
+  get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
+  set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} },
+  del(k){ try{ localStorage.removeItem(k); }catch(e){} }
+};
+
+let toastTimer;
+function toast(msg,isErr){
+  const el=$("toast");
+  el.textContent=msg;
+  el.className="toast show"+(isErr?" err":"");
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>{el.className="toast";},3200);
+}
+
+function makeCode(){
+  const a="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let o="";
+  for(let i=0;i<6;i++) o+=a[Math.floor(Math.random()*a.length)];
+  return o;
+}
+
+function colorOf(name){
+  const m=state.members.find(x=>x.name===name);
+  return m ? m.color : "#C3C3BC";
+}
+
+function errText(e){ return (e && e.code ? e.code+" " : "") + ((e && e.message) || "未知"); }
+
+function diag(){
+  const t=state.lastSync ? state.lastSync.toLocaleTimeString("zh-HK") : "未曾";
+  const txt=
+    "房間號碼  "+(state.room?state.room.room_code:"—")+"\n"+
+    "房間 ID   "+(state.room?state.room.id:"—")+"\n"+
+    "你嘅名    "+(state.me||"—")+"\n"+
+    "你嘅顏色  "+(state.me?colorOf(state.me):"—")+"\n"+
+    "即時狀態  "+state.rtStatus+"\n"+
+    "成員人數  "+state.members.length+"\n"+
+    "成員      "+(state.members.map(m=>m.name).join("、")||"—")+"\n"+
+    "紀錄總數  "+state.votes.length+"\n"+
+    "上次同步  "+t+"\n"+
+    "最後錯誤  "+(state.lastError||"無");
+  $("diagRoom").textContent=txt;
+  $("diagHome").textContent=txt;
+}
+
+/* =====================================================
+   成員:加入時自動派一隻未用嘅顏色
+   ===================================================== */
+async function ensureMember(roomId,name){
+  const {data:existing,error:e1}=await db.from("members")
+    .select().eq("room_id",roomId).eq("name",name).maybeSingle();
+  if(e1) throw e1;
+  if(existing) return existing;
+
+  for(let attempt=0;attempt<6;attempt++){
+    const {data:taken,error:e2}=await db.from("members")
+      .select("color").eq("room_id",roomId);
+    if(e2) throw e2;
+
+    const used=new Set((taken||[]).map(m=>m.color));
+    const free=ALL_COLORS.find(c=>!used.has(c));
+    if(!free) throw new Error("顏色已經用晒");
+
+    const {data,error}=await db.from("members")
+      .insert({room_id:roomId,name,color:free}).select().single();
+    if(!error) return data;
+
+    if(error.code==="23505"){
+      // 可能係同名或同色撞咗,重新查一次
+      const {data:again}=await db.from("members")
+        .select().eq("room_id",roomId).eq("name",name).maybeSingle();
+      if(again) return again;
+      continue;
+    }
+    throw error;
+  }
+  throw new Error("無法建立成員紀錄");
+}
+
+/* =====================================================
+   建立 / 加入
+   ===================================================== */
+$("btnCreate").addEventListener("click", async ()=>{
+  const title=$("newTitle").value.trim()||"未命名房間";
+  const name=$("newName").value.trim();
+  if(!name) return toast("請先填你嘅名",true);
+
+  const btn=$("btnCreate");
+  btn.disabled=true; btn.textContent="建立中…";
+  try{
+    let room=null;
+    for(let i=0;i<3 && !room;i++){
+      const {data,error}=await db.from("rooms")
+        .insert({room_code:makeCode(),title}).select().single();
+      if(!error){ room=data; break; }
+      if(error.code!=="23505") throw error;
+    }
+    if(!room) throw new Error("無法產生房間號碼");
+    state.me=name;
+    store.set("myName",name);
+    await enterRoom(room);
+  }catch(e){
+    state.lastError=errText(e); diag();
+    toast("建立失敗:"+state.lastError,true);
+  }finally{
+    btn.disabled=false; btn.textContent="建立房間";
+  }
+});
+
+$("btnJoin").addEventListener("click", ()=>{
+  const code=$("joinCode").value.trim().toUpperCase();
+  const name=$("joinName").value.trim();
+  if(code.length!==6) return toast("房間號碼係 6 個字元",true);
+  if(!name) return toast("請先填你嘅名",true);
+  doJoin(code,name);
+});
+
+async function doJoin(code,name){
+  const btn=$("btnJoin");
+  btn.disabled=true; btn.textContent="搵緊房間…";
+  try{
+    const {data,error}=await db.from("rooms").select().eq("room_code",code).maybeSingle();
+    if(error) throw error;
+    if(!data){ toast("搵唔到呢個房間號碼",true); return; }
+    state.me=name;
+    store.set("myName",name);
+    await enterRoom(data);
+  }catch(e){
+    state.lastError=errText(e); diag();
+    toast("加入失敗:"+state.lastError,true);
+  }finally{
+    btn.disabled=false; btn.textContent="加入";
+  }
+}
+
+async function enterRoom(room){
+  state.room=room;
+  state.cursor=new Date();
+  store.set("lastRoom",room.room_code);
+
+  $("view-home").classList.add("hidden");
+  $("view-room").classList.remove("hidden");
+  $("roomTitle").textContent=room.title||"未命名房間";
+  $("roomWho").textContent="你係:"+state.me;
+  $("roomCodeText").textContent=room.room_code;
+
+  if(location.hash!=="#r="+room.room_code){
+    history.replaceState(null,"","#r="+room.room_code);
+  }
+
+  try{
+    await ensureMember(room.id,state.me);
+  }catch(e){
+    state.lastError=errText(e);
+    toast("成員登記失敗:"+state.lastError,true);
+  }
+
+  await loadData();
+  render();
+  subscribe();
+  startPolling();
+}
+
+$("btnLeave").addEventListener("click", ()=>{
+  stopPolling();
+  if(state.channel){ db.removeChannel(state.channel); state.channel=null; }
+  state.room=null; state.votes=[]; state.members=[]; state.rtStatus="未連線";
+  store.del("lastRoom");
+  history.replaceState(null,"",location.pathname);
+  $("view-room").classList.add("hidden");
+  $("view-home").classList.remove("hidden");
+  showResume();
+});
+
+/* =====================================================
+   讀取
+   ===================================================== */
+async function loadData(){
+  const [v,m]=await Promise.all([
+    db.from("votes").select("name, vote_date").eq("room_id",state.room.id),
+    db.from("members").select("name, color, created_at").eq("room_id",state.room.id)
+      .order("created_at",{ascending:true})
+  ]);
+
+  if(v.error||m.error){
+    state.lastError=errText(v.error||m.error); diag();
+    toast("讀取失敗:"+state.lastError,true);
+    return false;
+  }
+
+  state.votes=v.data||[];
+  state.members=m.data||[];
+  state.lastSync=new Date();
+  state.lastError="";
+  diag();
+  return true;
+}
+
+async function refresh(){
+  if(!state.room) return;
+  if(await loadData()) render();
+}
+
+function startPolling(){
+  stopPolling();
+  state.pollTimer=setInterval(()=>{ if(!document.hidden) refresh(); },POLL_MS);
+}
+
+function stopPolling(){
+  if(state.pollTimer){ clearInterval(state.pollTimer); state.pollTimer=null; }
+}
+
+document.addEventListener("visibilitychange",()=>{
+  if(!document.hidden && state.room) refresh();
+});
+
+$("btnSync").addEventListener("click", async ()=>{
+  const b=$("btnSync");
+  b.textContent="載入中…";
+  await refresh();
+  b.textContent="重新載入";
+  toast("已更新");
+});
+
+/* =====================================================
+   即時訂閱
+   ===================================================== */
+let reloadTimer;
+function bump(){ clearTimeout(reloadTimer); reloadTimer=setTimeout(refresh,150); }
+
+function subscribe(){
+  if(state.channel) db.removeChannel(state.channel);
+
+  state.channel=db.channel("room-"+state.room.id)
+    .on("postgres_changes",
+      {event:"*",schema:"public",table:"votes",filter:"room_id=eq."+state.room.id}, bump)
+    .on("postgres_changes",
+      {event:"*",schema:"public",table:"members",filter:"room_id=eq."+state.room.id}, bump)
+    .subscribe(status=>{
+      state.rtStatus=status;
+      const tag=$("liveTag");
+      if(status==="SUBSCRIBED"){
+        tag.className="live";
+        tag.querySelector("span").textContent="即時同步中";
+      }else{
+        tag.className="live off";
+        tag.querySelector("span").textContent="定時更新中";
+      }
+      diag();
+    });
+}
+
+/* =====================================================
+   投票
+   ===================================================== */
+async function toggleVote(key){
+  if(state.busy.has(key)) return;
+  state.busy.add(key);
+
+  const mine=state.votes.some(v=>v.vote_date===key && v.name===state.me);
+
+  if(mine){
+    state.votes=state.votes.filter(v=>!(v.vote_date===key && v.name===state.me));
+  }else{
+    state.votes=state.votes.concat([{name:state.me,vote_date:key}]);
+  }
+  render();
+
+  try{
+    if(mine){
+      const {error}=await db.from("votes").delete()
+        .eq("room_id",state.room.id).eq("name",state.me).eq("vote_date",key);
+      if(error) throw error;
+    }else{
+      const {error}=await db.from("votes")
+        .insert({room_id:state.room.id,name:state.me,vote_date:key});
+      if(error && error.code!=="23505") throw error;
+    }
+    state.lastError=""; diag();
+  }catch(e){
+    state.lastError=errText(e); diag();
+    toast("儲存失敗:"+state.lastError,true);
+    await refresh();
+  }finally{
+    state.busy.delete(key);
+  }
+}
+
+/* =====================================================
+   換顏色
+   ===================================================== */
+function openPalette(){
+  const body=$("paletteBody");
+  body.innerHTML="";
+  const mine=colorOf(state.me);
+  const takenBy=new Map();
+  state.members.forEach(m=>{ if(m.name!==state.me) takenBy.set(m.color,m.name); });
+
+  for(const grp of PALETTE){
+    const lbl=document.createElement("div");
+    lbl.className="group-label";
+    lbl.textContent=grp.group;
+    body.appendChild(lbl);
+
+    const g=document.createElement("div");
+    g.className="swatch-grid";
+
+    for(const [hex,label] of grp.colors){
+      const b=document.createElement("button");
+      b.type="button";
+      b.className="sw"+(hex===mine?" current":"");
+      b.style.background=hex;
+      const owner=takenBy.get(hex);
+      b.title=owner ? label+"("+owner+"用緊)" : label;
+      b.setAttribute("aria-label",b.title);
+      if(owner) b.disabled=true;
+      else b.addEventListener("click",()=>pickColor(hex));
+      g.appendChild(b);
+    }
+    body.appendChild(g);
+  }
+  $("sheetColor").classList.remove("hidden");
+}
+
+async function pickColor(hex){
+  $("sheetColor").classList.add("hidden");
+  try{
+    const {error}=await db.from("members")
+      .update({color:hex}).eq("room_id",state.room.id).eq("name",state.me);
+    if(error){
+      if(error.code==="23505"){ toast("呢隻色啱啱俾人揀咗",true); await refresh(); return; }
+      throw error;
+    }
+    await refresh();
+    toast("顏色已更新");
+  }catch(e){
+    state.lastError=errText(e); diag();
+    toast("換色失敗:"+state.lastError,true);
+  }
+}
+
+$("sheetColorClose").addEventListener("click",()=>$("sheetColor").classList.add("hidden"));
+$("sheetColor").addEventListener("click",e=>{ if(e.target.id==="sheetColor") $("sheetColor").classList.add("hidden"); });
+$("sheetDayClose").addEventListener("click",()=>$("sheetDay").classList.add("hidden"));
+$("sheetDay").addEventListener("click",e=>{ if(e.target.id==="sheetDay") $("sheetDay").classList.add("hidden"); });
+
+/* =====================================================
+   日子詳情
+   ===================================================== */
+function openDay(key,names){
+  const [yy,mm,dd]=key.split("-").map(Number);
+  const w=WEEK_TC[new Date(yy,mm-1,dd).getDay()];
+  $("sheetDayTitle").textContent=mm+" 月 "+dd+" 日";
+  $("sheetDaySub").textContent="星期"+w+" · "+names.length+" 人得閒";
+
+  const list=$("sheetDayList");
+  list.innerHTML="";
+  names.forEach(n=>list.appendChild(memberChip(n)));
+  $("sheetDay").classList.remove("hidden");
+}
+
+function memberChip(name,isSelf){
+  const c=colorOf(name);
+  const el=document.createElement("span");
+  el.className="mchip"+(isSelf?" self":"");
+  el.style.background=c;
+  el.style.color=textOn(c);
+  el.textContent=name;
+  return el;
+}
+
+/* =====================================================
+   畫面
+   ===================================================== */
+function tally(){
+  const map=new Map();
+  const order=new Map(state.members.map((m,i)=>[m.name,i]));
+  for(const v of state.votes){
+    if(!map.has(v.vote_date)) map.set(v.vote_date,[]);
+    map.get(v.vote_date).push(v.name);
+  }
+  for(const arr of map.values()){
+    arr.sort((a,b)=>(order.has(a)?order.get(a):999)-(order.has(b)?order.get(b):999));
+  }
+  return map;
+}
+
+function render(){
+  const map=tally();
+  renderMembers();
+  renderGrid(map);
+  renderBars(map);
+}
+
+function renderMembers(){
+  const box=$("memberList");
+  box.innerHTML="";
+  $("memberCount").textContent=state.members.length+" 人";
+  $("memberEmpty").classList.toggle("hidden",state.members.length>0);
+
+  state.members.forEach(m=>{
+    const isSelf=m.name===state.me;
+    const chip=memberChip(m.name,isSelf);
+    if(isSelf) chip.addEventListener("click",openPalette);
+    box.appendChild(chip);
+  });
+}
+
+function renderGrid(map){
+  const y=state.cursor.getFullYear();
+  const m=state.cursor.getMonth();
+  $("monthLabel").textContent=`${y} 年 ${m+1} 月`;
+
+  const first=new Date(y,m,1).getDay();
+  const days=new Date(y,m+1,0).getDate();
+  const grid=$("grid");
+  grid.innerHTML="";
+
+  for(let i=0;i<first;i++){
+    const b=document.createElement("div");
+    b.className="cell blank";
+    grid.appendChild(b);
+  }
+
+  for(let d=1;d<=days;d++){
+    const key=dateKey(y,m,d);
+    const names=map.get(key)||[];
+    const count=names.length;
+    const mine=names.includes(state.me);
+
+    const cell=document.createElement("div");
+    cell.className="cell"
+      +(count?" lv"+Math.min(count,5):"")
+      +(mine?" mine":"")
+      +(key<todayKey?" past":"");
+    cell.setAttribute("role","button");
+    cell.setAttribute("tabindex","0");
+    cell.setAttribute("aria-label",`${m+1}月${d}日,${count} 人得閒`);
+
+    const num=document.createElement("span");
+    num.className="d";
+    num.textContent=d;
+    cell.appendChild(num);
+
+    if(count){
+      const box=document.createElement("div");
+      box.className="chips";
+      const shown=count>MAX_CHIPS ? names.slice(0,MAX_CHIPS-1) : names;
+
+      shown.forEach(n=>{
+        const c=colorOf(n);
+        const s=document.createElement("span");
+        s.className="chip";
+        s.style.background=c;
+        s.style.color=textOn(c);
+        s.textContent=n.length>3 ? n.slice(0,3) : n;
+        box.appendChild(s);
+      });
+
+      if(count>MAX_CHIPS){
+        const more=document.createElement("span");
+        more.className="chip more";
+        more.textContent="＋"+(count-(MAX_CHIPS-1));
+        more.addEventListener("click",ev=>{ ev.stopPropagation(); openDay(key,names); });
+        box.appendChild(more);
+      }
+      cell.appendChild(box);
+    }
+
+    cell.addEventListener("click",()=>toggleVote(key));
+    cell.addEventListener("keydown",e=>{
+      if(e.key==="Enter"||e.key===" "){ e.preventDefault(); toggleVote(key); }
+    });
+    grid.appendChild(cell);
+  }
+}
+
+function renderBars(map){
+  const rows=[...map.entries()]
+    .filter(([,n])=>n.length>0)
+    .sort((a,b)=>b[1].length-a[1].length || a[0].localeCompare(b[0]))
+    .slice(0,3);
+
+  const ul=$("bars");
+  ul.innerHTML="";
+  $("barsEmpty").classList.toggle("hidden",rows.length>0);
+  if(!rows.length) return;
+
+  const top=rows[0][1].length;
+
+  rows.forEach(([key,names],i)=>{
+    const [yy,mm,dd]=key.split("-").map(Number);
+    const w=WEEK_TC[new Date(yy,mm-1,dd).getDay()];
+    const li=document.createElement("li");
+    li.innerHTML=
+      '<div class="barhead">'+
+        '<span class="rk">'+String(i+1).padStart(2,"0")+'</span>'+
+        '<span class="dt">'+mm+'/'+dd+'</span>'+
+        '<span class="wd">星期'+w+'</span>'+
+        '<span class="ct">'+names.length+' 人</span>'+
+      '</div>'+
+      '<div class="track"><div class="fill"></div></div>';
+    ul.appendChild(li);
+    const fill=li.querySelector(".fill");
+    requestAnimationFrame(()=>{ fill.style.width=Math.round(names.length/top*100)+"%"; });
+  });
+}
+
+/* =====================================================
+   月份 / 分享
+   ===================================================== */
+$("prevM").addEventListener("click",()=>{
+  state.cursor=new Date(state.cursor.getFullYear(),state.cursor.getMonth()-1,1);
+  render();
+});
+
+$("nextM").addEventListener("click",()=>{
+  state.cursor=new Date(state.cursor.getFullYear(),state.cursor.getMonth()+1,1);
+  render();
+});
+
+function shareLink(){
+  const url=location.origin+location.pathname+"#r="+state.room.room_code;
+  if(navigator.share){ navigator.share({title:state.room.title,url}).catch(()=>{}); return; }
+  navigator.clipboard.writeText(url)
+    .then(()=>toast("邀請連結已複製"))
+    .catch(()=>toast(url));
+}
+
+$("btnShare").addEventListener("click",shareLink);
+$("roomCode").addEventListener("click",shareLink);
+
+/* =====================================================
+   啟動
+   ===================================================== */
+function showResume(){
+  const name=store.get("myName");
+  const code=store.get("lastRoom");
+  if(name){ $("joinName").value=name; $("newName").value=name; }
+  if(name && code){
+    $("resumeCard").style.display="block";
+    $("resumeInfo").textContent="房間 "+code+" · 你係 "+name;
+    $("btnResume").onclick=()=>doJoin(code,name);
+  }else{
+    $("resumeCard").style.display="none";
+  }
+}
+
+(async function init(){
+  showResume();
+  diag();
+
+  const hashCode=(location.hash.match(/r=([A-Za-z0-9]{6})/)||[])[1];
+  const savedName=store.get("myName");
+  const savedRoom=store.get("lastRoom");
+  const code=(hashCode||savedRoom||"").toUpperCase();
+
+  if(code) $("joinCode").value=code;
+
+  if(code && savedName){
+    await doJoin(code,savedName);
+  }else if(code){
+    setTimeout(()=>$("joinName").focus(),300);
+  }
+})();
+</script>
+</body>
+</html>
