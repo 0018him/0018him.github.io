@@ -322,24 +322,27 @@
     transition:width .6s cubic-bezier(.22,.8,.3,1);
   }
 
-  .seg.day{background:#A9C4D9; color:#141C2B;}
+  .seg.day{background:#4A729B; color:#F3F4F0;}
+  .seg.noon{background:#A9C4D9; color:#141C2B;}
   .seg.night{background:var(--dip-5); color:#F3F4F0;}
 
-  .filterbar{
-    display:flex; align-items:center; gap:10px; margin-bottom:16px;
-  }
+  .filterbar{margin-bottom:16px;}
 
   .filterbar .flabel{
-    font-family:var(--mono); font-size:10px;
-    letter-spacing:.18em; text-transform:uppercase; color:var(--ink-soft);
+    display:block; font-family:var(--mono); font-size:10px;
+    letter-spacing:.18em; text-transform:uppercase;
+    color:var(--ink-soft); margin-bottom:7px;
   }
 
-  .segtoggle{display:flex; margin-left:auto; border:1px solid var(--line); border-radius:2px; overflow:hidden;}
+  .segtoggle{
+    display:grid; grid-template-columns:repeat(4,1fr);
+    border:1px solid var(--line); border-radius:2px; overflow:hidden;
+  }
 
   .segtoggle button{
     background:transparent; border:none; cursor:pointer;
-    padding:7px 13px; font-family:var(--sans); font-size:12px;
-    color:var(--ink-soft); letter-spacing:.04em;
+    padding:8px 2px; font-family:var(--sans); font-size:12px;
+    color:var(--ink-soft); letter-spacing:.02em; text-align:center;
   }
 
   .segtoggle button + button{border-left:1px solid var(--line);}
@@ -415,7 +418,14 @@
     transform:rotate(42deg);
   }
 
-  .chk .lbl{font-size:15px;}
+  .chk .lbl{font-size:15px; line-height:1.35;}
+
+  .chk .lbl small{
+    display:block; font-family:var(--mono);
+    font-size:10px; letter-spacing:.06em;
+    color:var(--ink-soft); font-weight:400; margin-top:1px;
+  }
+
   .chk .hint{margin-left:auto; font-family:var(--mono); font-size:10px; letter-spacing:.1em; color:var(--ink-soft);}
   .chk input:checked ~ .lbl{font-weight:600;}
 
@@ -509,7 +519,7 @@
 
     <p class="eyebrow">Shared Calendar</p>
     <h1 class="title">夾日子</h1>
-    <p class="lede">撳日曆格,揀你全日得閒定係得夜晚。名字會即刻出現喺格入面,人愈多格底愈深。</p>
+    <p class="lede">撳日曆格,揀你全日得閒、定係得日頭或者夜晚。名字會即刻出現喺格入面,人愈多格底愈深。</p>
 
     <button class="btn btn-quiet hidden" id="btnBackRoom" style="margin-bottom:18px">返回原本房間</button>
 
@@ -595,15 +605,18 @@
         <span class="flabel">Filter</span>
         <div class="segtoggle" id="segFilter">
           <button type="button" data-f="all" class="on">全時段</button>
-          <button type="button" data-f="day">僅全日</button>
+          <button type="button" data-f="day">約全日</button>
+          <button type="button" data-f="night">約夜晚</button>
+          <button type="button" data-f="noon">約日頭</button>
         </div>
       </div>
 
       <ul class="bars" id="bars"></ul>
       <p class="empty hidden" id="barsEmpty">呢個月仲未有人揀日子。撳上面日曆任何一格開始。</p>
       <div class="keys" id="barKeys">
-        <span><i style="background:#A9C4D9"></i>全日</span>
-        <span><i style="background:var(--dip-5)"></i>夜晚</span>
+        <span id="keyDay"><i style="background:#4A729B"></i>全日</span>
+        <span id="keyNoon"><i style="background:#A9C4D9"></i>☀️ 日頭</span>
+        <span id="keyNight"><i style="background:var(--dip-5)"></i>🌙 夜晚</span>
       </div>
     </div>
 
@@ -630,14 +643,17 @@
       <label class="chk">
         <input type="checkbox" id="chkDay">
         <span class="box"></span>
-        <span class="lbl">全日得閒</span>
-        <span class="hint">整日</span>
+        <span class="lbl">全日<small>Lunch、Dinner 兩個都 Join 到</small></span>
+      </label>
+      <label class="chk">
+        <input type="checkbox" id="chkNoon">
+        <span class="box"></span>
+        <span class="lbl">☀️ 日頭<small>可以 Join Lunch</small></span>
       </label>
       <label class="chk">
         <input type="checkbox" id="chkNight">
         <span class="box"></span>
-        <span class="lbl">🌙 夜晚得閒</span>
-        <span class="hint">只限夜晚</span>
+        <span class="lbl">🌙 夜晚<small>可以 Join Dinner</small></span>
       </label>
     </div>
 
@@ -760,7 +776,10 @@ function diag(){
     "成員人數  "+state.members.length+"\n"+
     "成員      "+(state.members.map(m=>m.name).join("、")||"—")+"\n"+
     "紀錄總數  "+state.votes.length+"\n"+
-    "其中全日  "+state.votes.filter(v=>v.slot!=="night").length+"\n"+
+    "全日/日頭/夜晚  "+
+      state.votes.filter(v=>v.slot==="day").length+" / "+
+      state.votes.filter(v=>v.slot==="noon").length+" / "+
+      state.votes.filter(v=>v.slot==="night").length+"\n"+
     "上次同步  "+t+"\n"+
     "最後錯誤  "+(state.lastError||"無");
   $("diagRoom").textContent=txt;
@@ -1195,44 +1214,56 @@ function paintDay(){
   rows.sort((a,b)=>(order.has(a.name)?order.get(a.name):999)-(order.has(b.name)?order.get(b.name):999));
 
   const nDay=rows.filter(r=>r.slot==="day").length;
+  const nNoon=rows.filter(r=>r.slot==="noon").length;
   const nNight=rows.filter(r=>r.slot==="night").length;
 
   $("sheetDayTitle").textContent=mm+" 月 "+dd+" 日";
-  $("sheetDaySub").textContent="星期"+w+" · 全日 "+nDay+" 人 · 夜晚 "+nNight+" 人";
+  $("sheetDaySub").textContent="星期"+w+" · 全日 "+nDay+" · ☀️ "+nNoon+" · 🌙 "+nNight;
 
   const cur=mySlot(key);
   $("chkDay").checked   = cur==="day";
+  $("chkNoon").checked  = cur==="noon";
   $("chkNight").checked = cur==="night";
 
   const list=$("sheetDayList");
   list.innerHTML="";
   $("sheetDayEmpty").classList.toggle("hidden",rows.length>0);
-  rows.forEach(r=>list.appendChild(memberChip(r.name,false,r.slot==="night")));
+  rows.forEach(r=>list.appendChild(memberChip(r.name,false,r.slot)));
 }
 
-$("chkDay").addEventListener("change",()=>{
-  const key=state.openKey;
-  if(!key) return;
-  const on=$("chkDay").checked;
-  if(on) $("chkNight").checked=false;
-  setVote(key,on?"day":null);
-});
+/* 三個 checkbox 互相排斥:剔其中一個會解除其餘,全部解除即取消該日 */
+function bindSlot(boxId,slot){
+  $(boxId).addEventListener("change",()=>{
+    const key=state.openKey;
+    if(!key) return;
+    const on=$(boxId).checked;
+    if(on){
+      ["chkDay","chkNoon","chkNight"].forEach(id=>{
+        if(id!==boxId) $(id).checked=false;
+      });
+    }
+    setVote(key, on ? slot : null);
+  });
+}
 
-$("chkNight").addEventListener("change",()=>{
-  const key=state.openKey;
-  if(!key) return;
-  const on=$("chkNight").checked;
-  if(on) $("chkDay").checked=false;
-  setVote(key,on?"night":null);
-});
+bindSlot("chkDay","day");
+bindSlot("chkNoon","noon");
+bindSlot("chkNight","night");
 
-function memberChip(name,isSelf,isNight){
+function slotMark(slot){
+  if(slot==="noon")  return "☀️";
+  if(slot==="night") return "🌙";
+  return "";
+}
+
+function memberChip(name,isSelf,slot){
   const c=colorOf(name);
   const el=document.createElement("span");
   el.className="mchip"+(isSelf?" self":"");
   el.style.background=c;
   el.style.color=textOn(c);
-  el.textContent=(isNight?"🌙 ":"")+name;
+  const mk=slotMark(slot);
+  el.textContent=(mk?mk+" ":"")+name;
   return el;
 }
 
@@ -1269,7 +1300,7 @@ function renderMembers(){
 
   state.members.forEach(m=>{
     const isSelf=m.name===state.me;
-    const chip=memberChip(m.name,isSelf,false);
+    const chip=memberChip(m.name,isSelf,null);
     if(isSelf) chip.addEventListener("click",openPalette);
     box.appendChild(chip);
   });
@@ -1322,8 +1353,9 @@ function renderGrid(map){
         s.className="chip";
         s.style.background=c;
         s.style.color=textOn(c);
-        s.textContent = r.slot==="night"
-          ? "🌙"+r.name.slice(0,2)
+        const mk=slotMark(r.slot);
+        s.textContent = mk
+          ? mk+r.name.slice(0,2)
           : r.name.slice(0,3);
         box.appendChild(s);
       });
@@ -1370,22 +1402,20 @@ function drawBars(rows){
       '</div>'+
       '<div class="track">'+
         '<div class="seg day"></div>'+
+        '<div class="seg noon"></div>'+
         '<div class="seg night"></div>'+
       '</div>';
     ul.appendChild(li);
 
-    const dayPct   = r.dayCount   / top * 100;
-    const nightPct = r.nightCount / top * 100;
-
-    const segDay=li.querySelector(".seg.day");
-    const segNight=li.querySelector(".seg.night");
-
-    if(r.dayCount   && dayPct   >= LABEL_MIN_PCT) segDay.textContent   = r.dayCount;
-    if(r.nightCount && nightPct >= LABEL_MIN_PCT) segNight.textContent = r.nightCount;
-
-    requestAnimationFrame(()=>{
-      segDay.style.width   = dayPct.toFixed(2)+"%";
-      segNight.style.width = nightPct.toFixed(2)+"%";
+    [
+      [".seg.day",   r.dayCount,   ""],
+      [".seg.noon",  r.noonCount,  "☀️"],
+      [".seg.night", r.nightCount, "🌙"]
+    ].forEach(([sel,count,mark])=>{
+      const el=li.querySelector(sel);
+      const pct=count/top*100;
+      if(count && pct>=LABEL_MIN_PCT) el.textContent=mark+count;
+      requestAnimationFrame(()=>{ el.style.width=pct.toFixed(2)+"%"; });
     });
   });
 }
@@ -1400,24 +1430,33 @@ function renderBars(map){
 
   const all=[...map.entries()]
     .filter(([key])=>key.startsWith(prefix))
-    .map(([key,rows])=>{
-      const dayCount=rows.filter(r=>r.slot==="day").length;
-      const nightCount=rows.filter(r=>r.slot==="night").length;
-      return {key,dayCount,nightCount,total:dayCount+nightCount};
-    });
+    .map(([key,rows])=>({
+      key,
+      dayCount:   rows.filter(r=>r.slot==="day").length,
+      noonCount:  rows.filter(r=>r.slot==="noon").length,
+      nightCount: rows.filter(r=>r.slot==="night").length
+    }));
 
-  let rows;
-  if(state.filter==="day"){
-    // 僅全日:只計、只顯示全日嗰批
-    rows=all.filter(r=>r.dayCount>0)
-      .map(r=>({key:r.key,dayCount:r.dayCount,nightCount:0,total:r.dayCount}))
-      .sort((a,b)=>b.total-a.total || a.key.localeCompare(b.key));
-  }else{
-    rows=all.filter(r=>r.total>0)
-      .sort((a,b)=>b.total-a.total || a.key.localeCompare(b.key));
-  }
+  // 全日嘅人 Lunch、Dinner 都去到,所以約日頭 / 約夜晚都要計埋佢哋
+  const shape = {
+    all:   r => ({...r, total:r.dayCount+r.noonCount+r.nightCount}),
+    day:   r => ({key:r.key, dayCount:r.dayCount, noonCount:0, nightCount:0, total:r.dayCount}),
+    noon:  r => ({key:r.key, dayCount:r.dayCount, noonCount:r.noonCount, nightCount:0,
+                  total:r.dayCount+r.noonCount}),
+    night: r => ({key:r.key, dayCount:r.dayCount, noonCount:0, nightCount:r.nightCount,
+                  total:r.dayCount+r.nightCount})
+  }[state.filter] || (r => ({...r, total:r.dayCount+r.noonCount+r.nightCount}));
 
-  $("barKeys").classList.toggle("hidden",state.filter==="day");
+  const rows=all.map(shape)
+    .filter(r=>r.total>0)
+    .sort((a,b)=>b.total-a.total || a.key.localeCompare(b.key));
+
+  // 圖例只顯示今次用到嘅色塊
+  $("keyDay").classList.toggle("hidden",false);
+  $("keyNoon").classList.toggle("hidden", state.filter==="day" || state.filter==="night");
+  $("keyNight").classList.toggle("hidden", state.filter==="day" || state.filter==="noon");
+  $("barKeys").classList.toggle("hidden", state.filter==="day");
+
   drawBars(rows.slice(0,3));
 }
 
