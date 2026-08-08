@@ -589,7 +589,7 @@
     <div class="grid" id="grid"></div>
 
     <div class="card" style="margin-top:24px">
-      <h2>最多人得閒 <em>TOP 3</em></h2>
+      <h2>最多人得閒 <em id="barsMonth">TOP 3</em></h2>
 
       <div class="filterbar">
         <span class="flabel">Filter</span>
@@ -600,7 +600,7 @@
       </div>
 
       <ul class="bars" id="bars"></ul>
-      <p class="empty hidden" id="barsEmpty">仲未有人揀日子。撳上面日曆任何一格開始。</p>
+      <p class="empty hidden" id="barsEmpty">呢個月仲未有人揀日子。撳上面日曆任何一格開始。</p>
       <div class="keys" id="barKeys">
         <span><i style="background:#A9C4D9"></i>全日</span>
         <span><i style="background:var(--dip-5)"></i>夜晚</span>
@@ -1391,11 +1391,20 @@ function drawBars(rows){
 }
 
 function renderBars(map){
-  const all=[...map.entries()].map(([key,rows])=>{
-    const dayCount=rows.filter(r=>r.slot==="day").length;
-    const nightCount=rows.filter(r=>r.slot==="night").length;
-    return {key,dayCount,nightCount,total:dayCount+nightCount};
-  });
+  // 只結算日曆而家顯示緊嗰個月
+  const y=state.cursor.getFullYear();
+  const m=state.cursor.getMonth();
+  const prefix=y+"-"+pad(m+1)+"-";
+
+  $("barsMonth").textContent=(m+1)+" 月 · TOP 3";
+
+  const all=[...map.entries()]
+    .filter(([key])=>key.startsWith(prefix))
+    .map(([key,rows])=>{
+      const dayCount=rows.filter(r=>r.slot==="day").length;
+      const nightCount=rows.filter(r=>r.slot==="night").length;
+      return {key,dayCount,nightCount,total:dayCount+nightCount};
+    });
 
   let rows;
   if(state.filter==="day"){
