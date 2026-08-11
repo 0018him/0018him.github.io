@@ -27,11 +27,8 @@
   html,body{margin:0; padding:0;}
 
   body{
-    background:var(--paper);
-    color:var(--ink);
-    font-family:var(--sans);
-    font-size:15px;
-    line-height:1.6;
+    background:var(--paper); color:var(--ink);
+    font-family:var(--sans); font-size:15px; line-height:1.6;
     min-height:100vh;
     padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
   }
@@ -40,19 +37,15 @@
 
   /* ---------- 左欄 ---------- */
   .side{
-    position:fixed; left:0; top:0; bottom:0;
-    width:var(--side-w);
-    background:var(--paper-2);
-    border-right:1px solid var(--line);
-    z-index:70; overflow-y:auto;
-    -webkit-overflow-scrolling:touch;
+    position:fixed; left:0; top:0; bottom:0; width:var(--side-w);
+    background:var(--paper-2); border-right:1px solid var(--line);
+    z-index:70; overflow-y:auto; -webkit-overflow-scrolling:touch;
     padding:20px 16px calc(20px + env(safe-area-inset-bottom));
     transform:translateX(-100%);
     transition:transform .28s cubic-bezier(.3,.8,.3,1);
   }
 
   .side.open{transform:none;}
-
   .side-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:26px;}
   .side-head .brand{font-family:var(--serif); font-weight:700; font-size:19px; letter-spacing:.06em;}
 
@@ -93,11 +86,8 @@
     color:var(--ink-soft); font-size:15px; cursor:pointer; padding:0;
   }
 
-  .roomlist .drop:active{background:rgba(0,0,0,.05);}
-
   .scrim{
-    position:fixed; inset:0; z-index:65;
-    background:rgba(20,28,43,.4);
+    position:fixed; inset:0; z-index:65; background:rgba(20,28,43,.4);
     opacity:0; pointer-events:none; transition:opacity .28s ease;
   }
 
@@ -155,6 +145,9 @@
   .field input:focus{border-color:var(--dip-5); box-shadow:0 0 0 2px rgba(27,58,99,.16);}
   .field input.code{font-family:var(--mono); letter-spacing:.3em; text-transform:uppercase;}
 
+  .row2{display:flex; gap:12px;}
+  .row2 .field{flex:1;}
+
   .btn{
     display:block; width:100%; padding:14px;
     font-family:var(--sans); font-size:15px; font-weight:600;
@@ -166,6 +159,7 @@
   .btn[disabled]{opacity:.5; cursor:default;}
   .btn-quiet{background:transparent; color:var(--ink); border:1px solid var(--line);}
   .btn-quiet:active{background:rgba(0,0,0,.05);}
+  .btn-danger{background:transparent; color:var(--seal); border:1px solid var(--seal);}
   .btn-sm{padding:10px; font-size:13px;}
 
   .divider{
@@ -175,11 +169,7 @@
 
   .divider::before,.divider::after{content:""; flex:1; height:1px; background:var(--line);}
 
-  .card{
-    background:var(--paper-2); border:1px solid var(--line);
-    border-radius:2px; padding:20px 18px;
-  }
-
+  .card{background:var(--paper-2); border:1px solid var(--line); border-radius:2px; padding:20px 18px;}
   .card + .card{margin-top:18px;}
 
   .card h2{
@@ -193,13 +183,30 @@
     font-size:11px; letter-spacing:.14em; color:var(--ink-soft);
   }
 
+  .card h2 .act{
+    margin-left:auto; background:none; border:1px solid var(--line);
+    border-radius:2px; padding:4px 9px; cursor:pointer;
+    font-family:var(--mono); font-size:10px; letter-spacing:.12em; color:var(--ink-soft);
+  }
+
   /* ---------- 房間標頭 ---------- */
   .roomhead{
     display:flex; align-items:flex-start; justify-content:space-between;
     gap:14px; padding-bottom:16px; border-bottom:1px solid var(--line); margin-bottom:14px;
   }
 
-  .roomhead h1{font-family:var(--serif); font-weight:700; font-size:24px; letter-spacing:.04em; margin:0;}
+  .roomhead h1{
+    font-family:var(--serif); font-weight:700; font-size:24px;
+    letter-spacing:.04em; margin:0;
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  }
+
+  .editname{
+    background:none; border:1px solid var(--line); border-radius:2px;
+    font-family:var(--mono); font-size:10px; letter-spacing:.12em;
+    color:var(--ink-soft); padding:3px 7px; cursor:pointer;
+  }
+
   .roomhead .who{font-size:13px; color:var(--ink-soft); margin-top:4px;}
 
   .seal{
@@ -237,8 +244,14 @@
     border:1px solid rgba(0,0,0,.10);
   }
 
-  .mchip.self{cursor:pointer; box-shadow:0 0 0 1.5px var(--ink);}
-  .mchip.self::after{content:"換色"; font-family:var(--mono); font-size:9px; letter-spacing:.1em; opacity:.75;}
+  .mchip.self{box-shadow:0 0 0 1.5px var(--ink);}
+  .mchip.tap{cursor:pointer;}
+
+  .mchip .adm{
+    font-family:var(--mono); font-size:9px; letter-spacing:.1em;
+    border:1px solid currentColor; border-radius:1px;
+    padding:0 3px; opacity:.8;
+  }
 
   /* ---------- 月份 ---------- */
   .monthbar{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;}
@@ -249,8 +262,6 @@
     background:var(--paper-2); color:var(--ink); font-size:15px;
     border-radius:2px; cursor:pointer;
   }
-
-  .navbtn:active{background:rgba(0,0,0,.05);}
 
   .dow{display:grid; grid-template-columns:repeat(7,1fr); gap:3px; margin-bottom:3px;}
 
@@ -280,6 +291,11 @@
 
   .cell .d{display:block; font-size:13px; font-weight:500; line-height:1.2;}
 
+  .cell .dot{
+    position:absolute; top:4px; right:4px;
+    width:5px; height:5px; border-radius:50%; background:var(--seal);
+  }
+
   .chips{display:flex; flex-direction:column; gap:1px; margin-top:3px;}
 
   .chip{
@@ -289,10 +305,7 @@
     font-family:var(--sans);
   }
 
-  .chip.more{
-    background:transparent; color:var(--ink-soft);
-    font-family:var(--mono); border:1px dashed var(--line);
-  }
+  .chip.more{background:transparent; color:var(--ink-soft); font-family:var(--mono); border:1px dashed var(--line);}
 
   /* ---------- 長條圖 ---------- */
   .bars{list-style:none; margin:0; padding:0;}
@@ -309,10 +322,7 @@
   .barhead .wd{font-size:10px; color:var(--ink-soft); letter-spacing:.1em;}
   .barhead .ct{margin-left:auto; font-weight:600; color:var(--dip-5);}
 
-  .track{
-    display:flex; height:20px; background:#E1E3DE;
-    border-radius:1px; overflow:hidden;
-  }
+  .track{display:flex; height:20px; background:#E1E3DE; border-radius:1px; overflow:hidden;}
 
   .seg{
     display:flex; align-items:center; justify-content:flex-end;
@@ -342,16 +352,11 @@
   .segtoggle button{
     background:transparent; border:none; cursor:pointer;
     padding:8px 2px; font-family:var(--sans); font-size:12px;
-    color:var(--ink-soft); letter-spacing:.02em; text-align:center;
+    color:var(--ink-soft); text-align:center;
   }
 
   .segtoggle button + button{border-left:1px solid var(--line);}
   .segtoggle button.on{background:var(--dip-5); color:var(--paper-2); font-weight:600;}
-
-  .subnote{
-    font-family:var(--mono); font-size:10px; letter-spacing:.1em;
-    color:var(--ink-soft); margin:0 0 12px;
-  }
 
   .keys{
     display:flex; gap:14px; margin-top:12px;
@@ -361,6 +366,43 @@
 
   .keys span{display:inline-flex; align-items:center; gap:5px;}
   .keys i{width:12px; height:8px; border-radius:1px; display:block;}
+
+  /* ---------- 群組行程 ---------- */
+  .plans{list-style:none; margin:0; padding:0;}
+
+  .pgrid{
+    display:grid;
+    grid-template-columns:58px 44px 1fr auto;
+    gap:8px; align-items:baseline;
+  }
+
+  .phead{
+    font-family:var(--mono); font-size:9px; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--ink-soft);
+    padding-bottom:7px; border-bottom:1px solid var(--line); margin-bottom:10px;
+  }
+
+  .plans li{padding:12px 0; border-bottom:1px solid var(--line);}
+  .plans li:last-child{border-bottom:none; padding-bottom:0;}
+
+  .pdate{font-family:var(--mono); font-size:13px; font-weight:600; line-height:1.2;}
+  .pdate small{display:block; font-size:9px; letter-spacing:.1em; color:var(--ink-soft); font-weight:400;}
+  .ptime{font-family:var(--mono); font-size:12px; color:var(--ink-soft);}
+  .ptitle{font-size:14px; font-weight:600; word-break:break-word;}
+  .pcount{font-family:var(--mono); font-size:12px; font-weight:600; color:var(--dip-5); white-space:nowrap;}
+
+  .pmembers{margin-top:9px;}
+
+  .pacts{display:flex; gap:8px; margin-top:10px;}
+
+  .pacts button{
+    background:transparent; border:1px solid var(--line); border-radius:2px;
+    padding:6px 12px; font-family:var(--sans); font-size:12px;
+    color:var(--ink); cursor:pointer;
+  }
+
+  .pacts button.on{background:var(--dip-5); border-color:var(--dip-5); color:var(--paper-2); font-weight:600;}
+  .pacts button.del{color:var(--seal); border-color:var(--seal); margin-left:auto;}
 
   .empty{color:var(--ink-soft); font-size:13px; margin:0;}
 
@@ -376,7 +418,7 @@
   .sheet-inner{
     background:var(--paper-2); border:1px solid var(--line);
     border-radius:3px; width:100%; max-width:488px;
-    max-height:78vh; overflow-y:auto;
+    max-height:80vh; overflow-y:auto;
     -webkit-overflow-scrolling:touch; padding:20px 18px 22px;
   }
 
@@ -390,8 +432,7 @@
     color:var(--ink-soft); margin:0 0 16px;
   }
 
-  /* ---------- 時段 checkbox ---------- */
-  .slots{display:flex; flex-direction:column; gap:8px; margin-bottom:20px;}
+  .slots{display:flex; flex-direction:column; gap:8px; margin-bottom:18px;}
 
   .chk{
     display:flex; align-items:center; gap:11px;
@@ -404,8 +445,7 @@
   .chk .box{
     flex:none; width:19px; height:19px;
     border:1.5px solid var(--ink-soft);
-    border-radius:2px; background:transparent;
-    position:relative;
+    border-radius:2px; background:transparent; position:relative;
   }
 
   .chk input:checked + .box{background:var(--dip-5); border-color:var(--dip-5);}
@@ -413,20 +453,17 @@
   .chk input:checked + .box::after{
     content:""; position:absolute;
     left:5.5px; top:1.5px; width:5px; height:10px;
-    border:solid var(--paper-2);
-    border-width:0 2px 2px 0;
+    border:solid var(--paper-2); border-width:0 2px 2px 0;
     transform:rotate(42deg);
   }
 
   .chk .lbl{font-size:15px; line-height:1.35;}
 
   .chk .lbl small{
-    display:block; font-family:var(--mono);
-    font-size:10px; letter-spacing:.06em;
-    color:var(--ink-soft); font-weight:400; margin-top:1px;
+    display:block; font-family:var(--mono); font-size:10px;
+    letter-spacing:.06em; color:var(--ink-soft); font-weight:400; margin-top:1px;
   }
 
-  .chk .hint{margin-left:auto; font-family:var(--mono); font-size:10px; letter-spacing:.1em; color:var(--ink-soft);}
   .chk input:checked ~ .lbl{font-weight:600;}
 
   .swatch-grid{display:grid; grid-template-columns:repeat(5,1fr); gap:7px; margin-bottom:6px;}
@@ -452,6 +489,8 @@
 
   .group-label:first-of-type{margin-top:0;}
 
+  .stack{display:flex; flex-direction:column; gap:9px;}
+
   .toast{
     position:fixed; left:50%; bottom:24px;
     transform:translateX(-50%) translateY(20px);
@@ -464,8 +503,10 @@
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
   .toast.err{background:var(--seal);}
 
-  .foot{margin-top:32px; padding-top:16px; border-top:1px solid var(--line); display:flex; gap:10px;}
-  .foot button{flex:1; padding:11px; font-size:13px;}
+  .foot{margin-top:32px; padding-top:16px; border-top:1px solid var(--line);}
+  .foot .rowbtns{display:flex; gap:10px; margin-bottom:10px;}
+  .foot .rowbtns button{flex:1; padding:11px; font-size:13px;}
+  .foot .wide{padding:11px; font-size:13px;}
 
   details.diag{margin-top:20px;}
 
@@ -491,7 +532,6 @@
 </head>
 <body>
 
-<!-- ================= 左欄 ================= -->
 <aside class="side" id="side">
   <div class="side-head">
     <span class="brand">夾日子</span>
@@ -519,7 +559,7 @@
 
     <p class="eyebrow">Shared Calendar</p>
     <h1 class="title">夾日子</h1>
-    <p class="lede">撳日曆格,揀你全日得閒、定係得日頭或者夜晚。名字會即刻出現喺格入面,人愈多格底愈深。</p>
+    <p class="lede">撳日曆格,揀你全日得閒、定係得日頭或者夜晚。夾好日子之後,可以就住嗰日開行程,大家報名參加。</p>
 
     <button class="btn btn-quiet hidden" id="btnBackRoom" style="margin-bottom:18px">返回原本房間</button>
 
@@ -566,7 +606,7 @@
 
     <div class="roomhead">
       <div>
-        <h1 id="roomTitle">—</h1>
+        <h1><span id="roomTitle">—</span><button class="editname hidden" id="btnRename">改名</button></h1>
         <div class="who" id="roomWho">—</div>
       </div>
       <button class="seal" id="roomCode" title="複製邀請連結">
@@ -584,6 +624,7 @@
       <h2>房間成員 <em id="memberCount">0</em></h2>
       <div class="members" id="memberList"></div>
       <p class="empty hidden" id="memberEmpty">仲未有人加入。</p>
+      <p class="empty hidden" id="adminHint" style="margin-top:11px">你係房管,撳其他成員可以設定權限或者移除。</p>
     </div>
 
     <div class="monthbar">
@@ -620,9 +661,25 @@
       </div>
     </div>
 
+    <div class="card">
+      <h2>群組行程 <em id="planCount">0</em>
+        <button class="act" id="btnAddPlan">＋ 新增</button>
+      </h2>
+
+      <div class="pgrid phead">
+        <span>日期</span><span>時間</span><span>行程名稱</span><span>人數</span>
+      </div>
+
+      <ul class="plans" id="planList"></ul>
+      <p class="empty hidden" id="planEmpty">仲未有行程。夾好日子之後,撳「＋ 新增」開一個。</p>
+    </div>
+
     <div class="foot">
-      <button class="btn btn-quiet" id="btnShare">複製邀請連結</button>
-      <button class="btn btn-quiet" id="btnLeave">返回首頁</button>
+      <div class="rowbtns">
+        <button class="btn btn-quiet" id="btnShare">複製邀請連結</button>
+        <button class="btn btn-quiet" id="btnBackHome">返回首頁</button>
+      </div>
+      <button class="btn btn-danger wide" id="btnLeaveRoom">退出房間</button>
     </div>
 
     <details class="diag">
@@ -633,7 +690,7 @@
 
 </div>
 
-<!-- 日子詳情 + 時段選擇 -->
+<!-- 日子詳情 -->
 <div class="sheet hidden" id="sheetDay">
   <div class="sheet-inner">
     <h3 id="sheetDayTitle">—</h3>
@@ -661,7 +718,10 @@
     <div class="members" id="sheetDayList"></div>
     <p class="empty hidden" id="sheetDayEmpty">仲未有人揀呢日。</p>
 
-    <button class="btn btn-quiet" id="sheetDayClose" style="margin-top:20px">收埋</button>
+    <div class="stack" style="margin-top:20px">
+      <button class="btn btn-quiet" id="btnPlanForDay">為呢日開行程</button>
+      <button class="btn btn-quiet" id="sheetDayClose">收埋</button>
+    </div>
   </div>
 </div>
 
@@ -672,6 +732,62 @@
     <p class="sheet-sub">打咗交叉嘅係其他人用緊</p>
     <div id="paletteBody"></div>
     <button class="btn btn-quiet" id="sheetColorClose" style="margin-top:20px">收埋</button>
+  </div>
+</div>
+
+<!-- 成員管理 -->
+<div class="sheet hidden" id="sheetMember">
+  <div class="sheet-inner">
+    <h3 id="mgTitle">—</h3>
+    <p class="sheet-sub" id="mgSub">—</p>
+    <div class="stack">
+      <button class="btn btn-quiet" id="mgPromote">設為房管</button>
+      <button class="btn btn-quiet" id="mgDemote">取消房管</button>
+      <button class="btn btn-danger" id="mgRemove">移除成員及佢嘅紀錄</button>
+      <button class="btn btn-quiet" id="mgClose">收埋</button>
+    </div>
+  </div>
+</div>
+
+<!-- 改房名 -->
+<div class="sheet hidden" id="sheetRename">
+  <div class="sheet-inner">
+    <h3>改房間名稱</h3>
+    <p class="sheet-sub">所有成員都會見到新名</p>
+    <div class="field">
+      <label for="renameInput">房間名稱</label>
+      <input id="renameInput" type="text" maxlength="30" autocomplete="off">
+    </div>
+    <div class="stack">
+      <button class="btn" id="renameSave">儲存</button>
+      <button class="btn btn-quiet" id="renameClose">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 新增行程 -->
+<div class="sheet hidden" id="sheetPlan">
+  <div class="sheet-inner">
+    <h3>新增行程</h3>
+    <p class="sheet-sub">開咗之後,其他成員可以撳「參加」</p>
+    <div class="row2">
+      <div class="field">
+        <label for="planDate">日期</label>
+        <input id="planDate" type="date">
+      </div>
+      <div class="field">
+        <label for="planTime">開始時間</label>
+        <input id="planTime" type="time">
+      </div>
+    </div>
+    <div class="field">
+      <label for="planTitle">行程名稱</label>
+      <input id="planTitle" type="text" maxlength="40" placeholder="例如:西貢食海鮮" autocomplete="off">
+    </div>
+    <div class="stack">
+      <button class="btn" id="planSave">建立</button>
+      <button class="btn btn-quiet" id="planClose">取消</button>
+    </div>
   </div>
 </div>
 
@@ -687,6 +803,7 @@ const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 
 const POLL_MS = 8000;
 const MAX_CHIPS = 6;
+const LABEL_MIN_PCT = 11;
 
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -721,10 +838,11 @@ function textOn(hex){
    狀態
    ===================================================== */
 const state = {
-  room:null, me:"", votes:[], members:[],
+  room:null, me:"", votes:[], members:[], plans:[], joins:[],
   cursor:new Date(), channel:null,
   rtStatus:"未連線", lastSync:null, lastError:"",
-  busy:new Set(), pollTimer:null, openKey:null, filter:"all"
+  busy:new Set(), pollTimer:null, openKey:null,
+  filter:"all", mgName:null
 };
 
 /* =====================================================
@@ -763,23 +881,39 @@ function colorOf(name){
   return m ? m.color : "#C3C3BC";
 }
 
+function meIsAdmin(){
+  const m=state.members.find(x=>x.name===state.me);
+  return !!(m && m.is_admin);
+}
+
 function errText(e){ return (e && e.code ? e.code+" " : "") + ((e && e.message) || "未知"); }
+
+function slotMark(slot){
+  if(slot==="noon")  return "☀️";
+  if(slot==="night") return "🌙";
+  return "";
+}
+
+function weekOf(key){
+  const [y,m,d]=key.split("-").map(Number);
+  return WEEK_TC[new Date(y,m-1,d).getDay()];
+}
 
 function diag(){
   const t=state.lastSync ? state.lastSync.toLocaleTimeString("zh-HK") : "未曾";
   const txt=
     "房間號碼  "+(state.room?state.room.room_code:"—")+"\n"+
     "房間 ID   "+(state.room?state.room.id:"—")+"\n"+
-    "你嘅名    "+(state.me||"—")+"\n"+
-    "你嘅顏色  "+(state.me?colorOf(state.me):"—")+"\n"+
+    "開房者    "+(state.room&&state.room.owner?state.room.owner:"—")+"\n"+
+    "你嘅名    "+(state.me||"—")+(meIsAdmin()?"(房管)":"")+"\n"+
     "即時狀態  "+state.rtStatus+"\n"+
-    "成員人數  "+state.members.length+"\n"+
-    "成員      "+(state.members.map(m=>m.name).join("、")||"—")+"\n"+
+    "成員      "+(state.members.map(m=>m.name+(m.is_admin?"*":"")).join("、")||"—")+"\n"+
     "紀錄總數  "+state.votes.length+"\n"+
     "全日/日頭/夜晚  "+
       state.votes.filter(v=>v.slot==="day").length+" / "+
       state.votes.filter(v=>v.slot==="noon").length+" / "+
       state.votes.filter(v=>v.slot==="night").length+"\n"+
+    "行程/報名  "+state.plans.length+" / "+state.joins.length+"\n"+
     "上次同步  "+t+"\n"+
     "最後錯誤  "+(state.lastError||"無");
   $("diagRoom").textContent=txt;
@@ -876,28 +1010,31 @@ async function switchRoom(code,name){
 /* =====================================================
    成員登記
    ===================================================== */
-async function ensureMember(roomId,name){
+async function ensureMember(room,name){
   const {data:existing,error:e1}=await db.from("members")
-    .select().eq("room_id",roomId).eq("name",name).maybeSingle();
+    .select().eq("room_id",room.id).eq("name",name).maybeSingle();
   if(e1) throw e1;
   if(existing) return existing;
 
   for(let attempt=0;attempt<6;attempt++){
     const {data:taken,error:e2}=await db.from("members")
-      .select("color").eq("room_id",roomId);
+      .select("color").eq("room_id",room.id);
     if(e2) throw e2;
 
     const used=new Set((taken||[]).map(m=>m.color));
     const free=ALL_COLORS.find(c=>!used.has(c));
     if(!free) throw new Error("顏色已經用晒");
 
+    // 第一個入嚟嘅人,或者記錄咗係開房者,就係房管
+    const admin = (taken||[]).length===0 || (room.owner && room.owner===name);
+
     const {data,error}=await db.from("members")
-      .insert({room_id:roomId,name,color:free}).select().single();
+      .insert({room_id:room.id,name,color:free,is_admin:admin}).select().single();
     if(!error) return data;
 
     if(error.code==="23505"){
       const {data:again}=await db.from("members")
-        .select().eq("room_id",roomId).eq("name",name).maybeSingle();
+        .select().eq("room_id",room.id).eq("name",name).maybeSingle();
       if(again) return again;
       continue;
     }
@@ -920,7 +1057,7 @@ $("btnCreate").addEventListener("click", async ()=>{
     let room=null;
     for(let i=0;i<3 && !room;i++){
       const {data,error}=await db.from("rooms")
-        .insert({room_code:makeCode(),title}).select().single();
+        .insert({room_code:makeCode(),title,owner:name}).select().single();
       if(!error){ room=data; break; }
       if(error.code!=="23505") throw error;
     }
@@ -967,10 +1104,10 @@ async function enterRoom(room){
   if(state.channel){ db.removeChannel(state.channel); state.channel=null; }
 
   state.room=room;
-  state.votes=[]; state.members=[];
+  state.votes=[]; state.members=[]; state.plans=[]; state.joins=[];
   state.cursor=new Date();
   state.openKey=null;
-  $("sheetDay").classList.add("hidden");
+  closeAllSheets();
 
   store.set("lastRoom",room.room_code);
   rememberRoom(room,state.me);
@@ -987,7 +1124,7 @@ async function enterRoom(room){
   }
 
   try{
-    await ensureMember(room.id,state.me);
+    await ensureMember(room,state.me);
   }catch(e){
     state.lastError=errText(e);
     toast("成員登記失敗:"+state.lastError,true);
@@ -999,37 +1136,76 @@ async function enterRoom(room){
   startPolling();
 }
 
-$("btnLeave").addEventListener("click", ()=>{
+function goHome(){
   stopPolling();
   if(state.channel){ db.removeChannel(state.channel); state.channel=null; }
-  state.room=null; state.votes=[]; state.members=[]; state.rtStatus="未連線"; state.openKey=null;
+  state.room=null; state.votes=[]; state.members=[]; state.plans=[]; state.joins=[];
+  state.rtStatus="未連線"; state.openKey=null;
   store.del("lastRoom");
   history.replaceState(null,"",location.pathname);
+  closeAllSheets();
   $("view-room").classList.add("hidden");
   $("view-home").classList.remove("hidden");
   $("btnBackRoom").classList.add("hidden");
   renderRoomList();
   window.scrollTo(0,0);
+}
+
+$("btnBackHome").addEventListener("click",goHome);
+
+/* 退出房間:清走自己嘅一切 */
+$("btnLeaveRoom").addEventListener("click", async ()=>{
+  if(!state.room) return;
+  if(!confirm("退出之後,你喺呢間房嘅所有選擇同報名都會刪走。確定?")) return;
+
+  const room=state.room, me=state.me;
+  try{
+    // 如果自己係唯一房管,先交棒俾最早加入嘅其他人
+    const others=state.members.filter(m=>m.name!==me);
+    const stillAdmin=others.some(m=>m.is_admin);
+    if(meIsAdmin() && !stillAdmin && others.length){
+      await db.from("members").update({is_admin:true})
+        .eq("room_id",room.id).eq("name",others[0].name);
+    }
+
+    await db.from("plan_joins").delete().eq("room_id",room.id).eq("name",me);
+    await db.from("votes").delete().eq("room_id",room.id).eq("name",me);
+    const {error}=await db.from("members").delete().eq("room_id",room.id).eq("name",me);
+    if(error) throw error;
+
+    saveRooms(getRooms().filter(r=>r.code!==room.room_code));
+    goHome();
+    toast("已退出房間");
+  }catch(e){
+    state.lastError=errText(e); diag();
+    toast("退出失敗:"+state.lastError,true);
+  }
 });
 
 /* =====================================================
    讀取
    ===================================================== */
 async function loadData(){
-  const [v,m]=await Promise.all([
-    db.from("votes").select("name, vote_date, slot").eq("room_id",state.room.id),
-    db.from("members").select("name, color, created_at").eq("room_id",state.room.id)
-      .order("created_at",{ascending:true})
+  const rid=state.room.id;
+  const [v,m,p,j]=await Promise.all([
+    db.from("votes").select("name, vote_date, slot").eq("room_id",rid),
+    db.from("members").select("name, color, is_admin, created_at").eq("room_id",rid)
+      .order("created_at",{ascending:true}),
+    db.from("plans").select("id, plan_date, start_time, title, created_by").eq("room_id",rid),
+    db.from("plan_joins").select("plan_id, name").eq("room_id",rid)
   ]);
 
-  if(v.error||m.error){
-    state.lastError=errText(v.error||m.error); diag();
+  const bad=v.error||m.error||p.error||j.error;
+  if(bad){
+    state.lastError=errText(bad); diag();
     toast("讀取失敗:"+state.lastError,true);
     return false;
   }
 
   state.votes=(v.data||[]).map(r=>({name:r.name,vote_date:r.vote_date,slot:r.slot||"day"}));
   state.members=m.data||[];
+  state.plans=p.data||[];
+  state.joins=j.data||[];
   state.lastSync=new Date();
   state.lastError="";
   diag();
@@ -1070,12 +1246,13 @@ function bump(){ clearTimeout(reloadTimer); reloadTimer=setTimeout(refresh,150);
 
 function subscribe(){
   if(state.channel) db.removeChannel(state.channel);
+  const f="room_id=eq."+state.room.id;
 
   state.channel=db.channel("room-"+state.room.id)
-    .on("postgres_changes",
-      {event:"*",schema:"public",table:"votes",filter:"room_id=eq."+state.room.id}, bump)
-    .on("postgres_changes",
-      {event:"*",schema:"public",table:"members",filter:"room_id=eq."+state.room.id}, bump)
+    .on("postgres_changes",{event:"*",schema:"public",table:"votes",filter:f}, bump)
+    .on("postgres_changes",{event:"*",schema:"public",table:"members",filter:f}, bump)
+    .on("postgres_changes",{event:"*",schema:"public",table:"plans",filter:f}, bump)
+    .on("postgres_changes",{event:"*",schema:"public",table:"plan_joins",filter:f}, bump)
     .subscribe(status=>{
       state.rtStatus=status;
       const tag=$("liveTag");
@@ -1091,7 +1268,7 @@ function subscribe(){
 }
 
 /* =====================================================
-   投票:slot 為 "day" / "night" / null(取消)
+   投票
    ===================================================== */
 function mySlot(key){
   const v=state.votes.find(x=>x.vote_date===key && x.name===state.me);
@@ -1129,6 +1306,27 @@ async function setVote(key,slot){
     state.busy.delete(key);
   }
 }
+
+/* =====================================================
+   彈出層
+   ===================================================== */
+function closeAllSheets(){
+  ["sheetDay","sheetColor","sheetMember","sheetRename","sheetPlan"]
+    .forEach(id=>$(id).classList.add("hidden"));
+}
+
+function bindSheet(id,closeId,onClose){
+  $(closeId).addEventListener("click",()=>{ $(id).classList.add("hidden"); if(onClose) onClose(); });
+  $(id).addEventListener("click",e=>{
+    if(e.target.id===id){ $(id).classList.add("hidden"); if(onClose) onClose(); }
+  });
+}
+
+bindSheet("sheetColor","sheetColorClose");
+bindSheet("sheetMember","mgClose",()=>{ state.mgName=null; });
+bindSheet("sheetRename","renameClose");
+bindSheet("sheetPlan","planClose");
+bindSheet("sheetDay","sheetDayClose",()=>{ state.openKey=null; });
 
 /* =====================================================
    換顏色
@@ -1183,19 +1381,172 @@ async function pickColor(hex){
   }
 }
 
-$("sheetColorClose").addEventListener("click",()=>$("sheetColor").classList.add("hidden"));
-$("sheetColor").addEventListener("click",e=>{ if(e.target.id==="sheetColor") $("sheetColor").classList.add("hidden"); });
+/* =====================================================
+   房管
+   ===================================================== */
+function openMemberAdmin(name){
+  const m=state.members.find(x=>x.name===name);
+  if(!m) return;
+  state.mgName=name;
+  $("mgTitle").textContent=name;
+  $("mgSub").textContent=m.is_admin ? "而家係房管" : "一般成員";
+  $("mgPromote").classList.toggle("hidden",!!m.is_admin);
+  $("mgDemote").classList.toggle("hidden",!m.is_admin);
+  $("sheetMember").classList.remove("hidden");
+}
 
-$("sheetDayClose").addEventListener("click",closeDay);
-$("sheetDay").addEventListener("click",e=>{ if(e.target.id==="sheetDay") closeDay(); });
+async function setAdmin(name,flag){
+  try{
+    const {error}=await db.from("members").update({is_admin:flag})
+      .eq("room_id",state.room.id).eq("name",name);
+    if(error) throw error;
+    await refresh();
+    toast(flag ? name+" 已設為房管" : name+" 已取消房管");
+  }catch(e){
+    state.lastError=errText(e); diag();
+    toast("操作失敗:"+state.lastError,true);
+  }
+}
 
-function closeDay(){
-  state.openKey=null;
+$("mgPromote").addEventListener("click",async ()=>{
+  const n=state.mgName;
+  $("sheetMember").classList.add("hidden");
+  if(n) await setAdmin(n,true);
+});
+
+$("mgDemote").addEventListener("click",async ()=>{
+  const n=state.mgName;
+  $("sheetMember").classList.add("hidden");
+  if(!n) return;
+  const admins=state.members.filter(m=>m.is_admin);
+  if(admins.length<=1){ toast("最少要留返一位房管",true); return; }
+  await setAdmin(n,false);
+});
+
+$("mgRemove").addEventListener("click",async ()=>{
+  const n=state.mgName;
+  if(!n) return;
+  if(!confirm("移除「"+n+"」?佢喺呢間房嘅選擇同報名都會刪走。")) return;
+  $("sheetMember").classList.add("hidden");
+  try{
+    const rid=state.room.id;
+    await db.from("plan_joins").delete().eq("room_id",rid).eq("name",n);
+    await db.from("votes").delete().eq("room_id",rid).eq("name",n);
+    const {error}=await db.from("members").delete().eq("room_id",rid).eq("name",n);
+    if(error) throw error;
+    await refresh();
+    toast("已移除 "+n);
+  }catch(e){
+    state.lastError=errText(e); diag();
+    toast("移除失敗:"+state.lastError,true);
+  }
+});
+
+/* 改房名 */
+$("btnRename").addEventListener("click",()=>{
+  $("renameInput").value=state.room.title||"";
+  $("sheetRename").classList.remove("hidden");
+});
+
+$("renameSave").addEventListener("click",async ()=>{
+  const t=$("renameInput").value.trim();
+  if(!t) return toast("房間名稱唔可以吉",true);
+  $("sheetRename").classList.add("hidden");
+  try{
+    const {error}=await db.from("rooms").update({title:t}).eq("id",state.room.id);
+    if(error) throw error;
+    state.room.title=t;
+    $("roomTitle").textContent=t;
+    rememberRoom(state.room,state.me);
+    toast("已改名");
+  }catch(e){
+    state.lastError=errText(e); diag();
+    toast("改名失敗:"+state.lastError,true);
+  }
+});
+
+/* =====================================================
+   行程
+   ===================================================== */
+function openPlanForm(presetDate){
+  $("planDate").value = presetDate || state.openKey || todayKey;
+  $("planTime").value = "";
+  $("planTitle").value = "";
+  $("sheetPlan").classList.remove("hidden");
+  setTimeout(()=>$("planTitle").focus(),250);
+}
+
+$("btnAddPlan").addEventListener("click",()=>openPlanForm(null));
+
+$("btnPlanForDay").addEventListener("click",()=>{
+  const k=state.openKey;
   $("sheetDay").classList.add("hidden");
+  openPlanForm(k);
+});
+
+$("planSave").addEventListener("click",async ()=>{
+  const d=$("planDate").value;
+  const t=$("planTitle").value.trim();
+  const tm=$("planTime").value || null;
+  if(!d) return toast("請揀日期",true);
+  if(!t) return toast("請填行程名稱",true);
+
+  $("sheetPlan").classList.add("hidden");
+  try{
+    const {data,error}=await db.from("plans").insert({
+      room_id:state.room.id, plan_date:d, start_time:tm,
+      title:t, created_by:state.me
+    }).select().single();
+    if(error) throw error;
+
+    // 建立者自動參加
+    await db.from("plan_joins").insert({
+      plan_id:data.id, room_id:state.room.id, name:state.me
+    });
+
+    await refresh();
+    toast("行程已建立");
+  }catch(e){
+    state.lastError=errText(e); diag();
+    toast("建立失敗:"+state.lastError,true);
+  }
+});
+
+async function togglePlanJoin(planId){
+  const joined=state.joins.some(j=>j.plan_id===planId && j.name===state.me);
+  try{
+    if(joined){
+      const {error}=await db.from("plan_joins").delete()
+        .eq("plan_id",planId).eq("name",state.me);
+      if(error) throw error;
+    }else{
+      const {error}=await db.from("plan_joins").insert({
+        plan_id:planId, room_id:state.room.id, name:state.me
+      });
+      if(error && error.code!=="23505") throw error;
+    }
+    await refresh();
+  }catch(e){
+    state.lastError=errText(e); diag();
+    toast("操作失敗:"+state.lastError,true);
+  }
+}
+
+async function deletePlan(planId,title){
+  if(!confirm("刪除行程「"+title+"」?")) return;
+  try{
+    const {error}=await db.from("plans").delete().eq("id",planId);
+    if(error) throw error;
+    await refresh();
+    toast("行程已刪除");
+  }catch(e){
+    state.lastError=errText(e); diag();
+    toast("刪除失敗:"+state.lastError,true);
+  }
 }
 
 /* =====================================================
-   日子詳情 + 時段
+   日子詳情
    ===================================================== */
 function openDay(key){
   state.openKey=key;
@@ -1208,7 +1559,6 @@ function paintDay(){
   if(!key) return;
 
   const [yy,mm,dd]=key.split("-").map(Number);
-  const w=WEEK_TC[new Date(yy,mm-1,dd).getDay()];
   const rows=state.votes.filter(v=>v.vote_date===key);
   const order=new Map(state.members.map((m,i)=>[m.name,i]));
   rows.sort((a,b)=>(order.has(a.name)?order.get(a.name):999)-(order.has(b.name)?order.get(b.name):999));
@@ -1218,7 +1568,7 @@ function paintDay(){
   const nNight=rows.filter(r=>r.slot==="night").length;
 
   $("sheetDayTitle").textContent=mm+" 月 "+dd+" 日";
-  $("sheetDaySub").textContent="星期"+w+" · 全日 "+nDay+" · ☀️ "+nNoon+" · 🌙 "+nNight;
+  $("sheetDaySub").textContent="星期"+weekOf(key)+" · 全日 "+nDay+" · ☀️ "+nNoon+" · 🌙 "+nNight;
 
   const cur=mySlot(key);
   $("chkDay").checked   = cur==="day";
@@ -1228,19 +1578,16 @@ function paintDay(){
   const list=$("sheetDayList");
   list.innerHTML="";
   $("sheetDayEmpty").classList.toggle("hidden",rows.length>0);
-  rows.forEach(r=>list.appendChild(memberChip(r.name,false,r.slot)));
+  rows.forEach(r=>list.appendChild(memberChip(r.name,{slot:r.slot})));
 }
 
-/* 三個 checkbox 互相排斥:剔其中一個會解除其餘,全部解除即取消該日 */
 function bindSlot(boxId,slot){
   $(boxId).addEventListener("change",()=>{
     const key=state.openKey;
     if(!key) return;
     const on=$(boxId).checked;
     if(on){
-      ["chkDay","chkNoon","chkNight"].forEach(id=>{
-        if(id!==boxId) $(id).checked=false;
-      });
+      ["chkDay","chkNoon","chkNight"].forEach(id=>{ if(id!==boxId) $(id).checked=false; });
     }
     setVote(key, on ? slot : null);
   });
@@ -1250,25 +1597,28 @@ bindSlot("chkDay","day");
 bindSlot("chkNoon","noon");
 bindSlot("chkNight","night");
 
-function slotMark(slot){
-  if(slot==="noon")  return "☀️";
-  if(slot==="night") return "🌙";
-  return "";
-}
-
-function memberChip(name,isSelf,slot){
+function memberChip(name,opt){
+  const o=opt||{};
   const c=colorOf(name);
   const el=document.createElement("span");
-  el.className="mchip"+(isSelf?" self":"");
+  el.className="mchip"+(o.self?" self":"")+(o.tap?" tap":"");
   el.style.background=c;
   el.style.color=textOn(c);
-  const mk=slotMark(slot);
-  el.textContent=(mk?mk+" ":"")+name;
+
+  const mk=slotMark(o.slot);
+  el.appendChild(document.createTextNode((mk?mk+" ":"")+name));
+
+  if(o.admin){
+    const b=document.createElement("span");
+    b.className="adm";
+    b.textContent="管";
+    el.appendChild(b);
+  }
   return el;
 }
 
 /* =====================================================
-   統計
+   統計 / 畫面
    ===================================================== */
 function tally(){
   const map=new Map();
@@ -1288,8 +1638,11 @@ function render(){
   renderMembers();
   renderGrid(map);
   renderBars(map);
+  renderPlans();
   renderRoomList();
   paintDay();
+  $("btnRename").classList.toggle("hidden",!meIsAdmin());
+  $("adminHint").classList.toggle("hidden",!meIsAdmin());
 }
 
 function renderMembers(){
@@ -1298,10 +1651,15 @@ function renderMembers(){
   $("memberCount").textContent=state.members.length+" 人";
   $("memberEmpty").classList.toggle("hidden",state.members.length>0);
 
+  const admin=meIsAdmin();
+
   state.members.forEach(m=>{
     const isSelf=m.name===state.me;
-    const chip=memberChip(m.name,isSelf,null);
+    const chip=memberChip(m.name,{
+      self:isSelf, admin:m.is_admin, tap:isSelf||admin
+    });
     if(isSelf) chip.addEventListener("click",openPalette);
+    else if(admin) chip.addEventListener("click",()=>openMemberAdmin(m.name));
     box.appendChild(chip);
   });
 }
@@ -1313,6 +1671,7 @@ function renderGrid(map){
 
   const first=new Date(y,m,1).getDay();
   const days=new Date(y,m+1,0).getDate();
+  const planDates=new Set(state.plans.map(p=>p.plan_date));
   const grid=$("grid");
   grid.innerHTML="";
 
@@ -1342,6 +1701,12 @@ function renderGrid(map){
     num.textContent=d;
     cell.appendChild(num);
 
+    if(planDates.has(key)){
+      const dot=document.createElement("span");
+      dot.className="dot";
+      cell.appendChild(dot);
+    }
+
     if(count){
       const box=document.createElement("div");
       box.className="chips";
@@ -1354,9 +1719,7 @@ function renderGrid(map){
         s.style.background=c;
         s.style.color=textOn(c);
         const mk=slotMark(r.slot);
-        s.textContent = mk
-          ? mk+r.name.slice(0,2)
-          : r.name.slice(0,3);
+        s.textContent = mk ? mk+r.name.slice(0,2) : r.name.slice(0,3);
         box.appendChild(s);
       });
 
@@ -1377,9 +1740,6 @@ function renderGrid(map){
   }
 }
 
-/* 長條圖:淺藍=全日,深藍=夜晚,寬度按人數比例,數字寫喺色塊內右側 */
-const LABEL_MIN_PCT = 11;   // 太窄就唔寫數字,免得剪爛
-
 function drawBars(rows){
   const ul=$("bars");
   ul.innerHTML="";
@@ -1390,14 +1750,12 @@ function drawBars(rows){
 
   rows.forEach((r,i)=>{
     const [yy,mm,dd]=r.key.split("-").map(Number);
-    const w=WEEK_TC[new Date(yy,mm-1,dd).getDay()];
-
     const li=document.createElement("li");
     li.innerHTML=
       '<div class="barhead">'+
         '<span class="rk">'+String(i+1).padStart(2,"0")+'</span>'+
         '<span class="dt">'+mm+'/'+dd+'</span>'+
-        '<span class="wd">星期'+w+'</span>'+
+        '<span class="wd">星期'+weekOf(r.key)+'</span>'+
         '<span class="ct">'+r.total+' 人</span>'+
       '</div>'+
       '<div class="track">'+
@@ -1421,7 +1779,6 @@ function drawBars(rows){
 }
 
 function renderBars(map){
-  // 只結算日曆而家顯示緊嗰個月
   const y=state.cursor.getFullYear();
   const m=state.cursor.getMonth();
   const prefix=y+"-"+pad(m+1)+"-";
@@ -1437,7 +1794,6 @@ function renderBars(map){
       nightCount: rows.filter(r=>r.slot==="night").length
     }));
 
-  // 全日嘅人 Lunch、Dinner 都去到,所以約日頭 / 約夜晚都要計埋佢哋
   const shape = {
     all:   r => ({...r, total:r.dayCount+r.noonCount+r.nightCount}),
     day:   r => ({key:r.key, dayCount:r.dayCount, noonCount:0, nightCount:0, total:r.dayCount}),
@@ -1451,8 +1807,6 @@ function renderBars(map){
     .filter(r=>r.total>0)
     .sort((a,b)=>b.total-a.total || a.key.localeCompare(b.key));
 
-  // 圖例只顯示今次用到嘅色塊
-  $("keyDay").classList.toggle("hidden",false);
   $("keyNoon").classList.toggle("hidden", state.filter==="day" || state.filter==="night");
   $("keyNight").classList.toggle("hidden", state.filter==="day" || state.filter==="noon");
   $("barKeys").classList.toggle("hidden", state.filter==="day");
@@ -1463,11 +1817,79 @@ function renderBars(map){
 $("segFilter").addEventListener("click",e=>{
   const b=e.target.closest("button[data-f]");
   if(!b) return;
-  state.filter = b.dataset.f;
-  [...$("segFilter").querySelectorAll("button")]
-    .forEach(x=>x.classList.toggle("on",x===b));
+  state.filter=b.dataset.f;
+  [...$("segFilter").querySelectorAll("button")].forEach(x=>x.classList.toggle("on",x===b));
   renderBars(tally());
 });
+
+function renderPlans(){
+  const ul=$("planList");
+  ul.innerHTML="";
+
+  const plans=state.plans.slice().sort((a,b)=>
+    a.plan_date.localeCompare(b.plan_date) ||
+    (a.start_time||"99:99").localeCompare(b.start_time||"99:99")
+  );
+
+  $("planCount").textContent=plans.length+" 個";
+  $("planEmpty").classList.toggle("hidden",plans.length>0);
+
+  const order=new Map(state.members.map((m,i)=>[m.name,i]));
+  const admin=meIsAdmin();
+
+  plans.forEach(p=>{
+    const names=state.joins.filter(j=>j.plan_id===p.id).map(j=>j.name)
+      .sort((a,b)=>(order.has(a)?order.get(a):999)-(order.has(b)?order.get(b):999));
+    const joined=names.includes(state.me);
+    const [yy,mm,dd]=p.plan_date.split("-").map(Number);
+
+    const li=document.createElement("li");
+
+    const g=document.createElement("div");
+    g.className="pgrid";
+    g.innerHTML=
+      '<span class="pdate">'+mm+'/'+dd+'<small>星期'+weekOf(p.plan_date)+'</small></span>'+
+      '<span class="ptime">'+(p.start_time||"—")+'</span>'+
+      '<span class="ptitle"></span>'+
+      '<span class="pcount">'+names.length+' 人</span>';
+    g.querySelector(".ptitle").textContent=p.title;
+    li.appendChild(g);
+
+    const mem=document.createElement("div");
+    mem.className="members pmembers";
+    if(names.length){
+      names.forEach(n=>mem.appendChild(memberChip(n,{})));
+    }else{
+      const e=document.createElement("span");
+      e.className="empty";
+      e.textContent="仲未有人參加";
+      mem.appendChild(e);
+    }
+    li.appendChild(mem);
+
+    const acts=document.createElement("div");
+    acts.className="pacts";
+
+    const jb=document.createElement("button");
+    jb.type="button";
+    jb.className=joined?"on":"";
+    jb.textContent=joined?"已參加":"參加";
+    jb.addEventListener("click",()=>togglePlanJoin(p.id));
+    acts.appendChild(jb);
+
+    if(admin || p.created_by===state.me){
+      const db2=document.createElement("button");
+      db2.type="button";
+      db2.className="del";
+      db2.textContent="刪除";
+      db2.addEventListener("click",()=>deletePlan(p.id,p.title));
+      acts.appendChild(db2);
+    }
+
+    li.appendChild(acts);
+    ul.appendChild(li);
+  });
+}
 
 /* =====================================================
    月份 / 分享
