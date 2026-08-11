@@ -768,8 +768,8 @@
 <!-- 新增行程 -->
 <div class="sheet hidden" id="sheetPlan">
   <div class="sheet-inner">
-    <h3>新增行程</h3>
-    <p class="sheet-sub">開咗之後,其他成員可以撳「參加」</p>
+    <h3 id="planSheetTitle">新增行程</h3>
+    <p class="sheet-sub" id="planSheetSub">當日有空嘅成員會自動列為參加者</p>
     <div class="row2">
       <div class="field">
         <label for="planDate">日期</label>
@@ -780,10 +780,23 @@
         <input id="planTime" type="time">
       </div>
     </div>
+
+    <label class="chk" style="margin-bottom:16px">
+      <input type="checkbox" id="planTBD">
+      <span class="box"></span>
+      <span class="lbl">時間待定<small>未定實幾點開始</small></span>
+    </label>
+
     <div class="field">
       <label for="planTitle">行程名稱</label>
       <input id="planTitle" type="text" maxlength="40" placeholder="例如:西貢食海鮮" autocomplete="off">
     </div>
+
+    <div class="hidden" id="planMembersWrap">
+      <p class="side-label">參加者</p>
+      <div class="slots" id="planMembers"></div>
+    </div>
+
     <div class="stack">
       <button class="btn" id="planSave">建立</button>
       <button class="btn btn-quiet" id="planClose">取消</button>
@@ -842,7 +855,7 @@ const state = {
   cursor:new Date(), channel:null,
   rtStatus:"未連線", lastSync:null, lastError:"",
   busy:new Set(), pollTimer:null, openKey:null,
-  filter:"all", mgName:null
+  filter:"all", mgName:null, editPlanId:null
 };
 
 /* =====================================================
@@ -1192,7 +1205,7 @@ async function loadData(){
     db.from("members").select("name, color, is_admin, created_at").eq("room_id",rid)
       .order("created_at",{ascending:true}),
     db.from("plans").select("id, plan_date, start_time, title, created_by").eq("room_id",rid),
-    db.from("plan_joins").select("plan_id, name").eq("room_id",rid)
+    db.from("plan_joins").select("plan_id, name, mode").eq("room_id",rid)
   ]);
 
   const bad=v.error||m.error||p.error||j.error;
@@ -1297,6 +1310,7 @@ async function setVote(key,slot){
       if(error) throw error;
     }
     state.lastError=""; diag();
+    await syncPlansForVote(key, !!slot);
   }catch(e){
     state.votes=before;
     state.lastError=errText(e); diag();
@@ -1325,7 +1339,7 @@ function bindSheet(id,closeId,onClose){
 bindSheet("sheetColor","sheetColorClose");
 bindSheet("sheetMember","mgClose",()=>{ state.mgName=null; });
 bindSheet("sheetRename","renameClose");
-bindSheet("sheetPlan","planClose");
+bindSheet("sheetPlan","planClose",()=>{ state.editPlanId=null; });
 bindSheet("sheetDay","sheetDayClose",()=>{ state.openKey=null; });
 
 /* =====================================================
@@ -1468,13 +1482,75 @@ $("renameSave").addEventListener("click",async ()=>{
 /* =====================================================
    行程
    ===================================================== */
+/* 邊個算參加緊(auto 同 manual_in 都算) */
+function joinedNames(planId){
+  return state.joins
+    .filter(j=>j.plan_id===planId && j.mode!=="manual_out")
+    .map(j=>j.name);
+}
+
+function joinRow(planId,name){
+  return state.joins.find(j=>j.plan_id===planId && j.name===name);
+}
+
+/* 當日有空嘅人 */
+function freeOn(dateStr){
+  return state.votes.filter(v=>v.vote_date===dateStr).map(v=>v.name);
+}
+
 function openPlanForm(presetDate){
+  state.editPlanId=null;
+  $("planSheetTitle").textContent="新增行程";
+  $("planSheetSub").textContent="當日有空嘅成員會自動列為參加者";
+  $("planSave").textContent="建立";
   $("planDate").value = presetDate || state.openKey || todayKey;
   $("planTime").value = "";
+  $("planTBD").checked = false;
+  $("planTime").disabled = false;
   $("planTitle").value = "";
+  $("planMembersWrap").classList.add("hidden");
   $("sheetPlan").classList.remove("hidden");
   setTimeout(()=>$("planTitle").focus(),250);
 }
+
+function openPlanEdit(plan){
+  state.editPlanId=plan.id;
+  $("planSheetTitle").textContent="編輯行程";
+  $("planSheetSub").textContent="可以手動剔選參加者";
+  $("planSave").textContent="儲存";
+  $("planDate").value = plan.plan_date;
+  $("planTBD").checked = !plan.start_time;
+  $("planTime").value = plan.start_time || "";
+  $("planTime").disabled = !plan.start_time;
+  $("planTitle").value = plan.title;
+
+  const inNow=new Set(joinedNames(plan.id));
+  const box=$("planMembers");
+  box.innerHTML="";
+  state.members.forEach(m=>{
+    const lab=document.createElement("label");
+    lab.className="chk";
+    lab.innerHTML=
+      '<input type="checkbox" data-name="">'+
+      '<span class="box"></span>'+
+      '<span class="lbl"></span>';
+    const inp=lab.querySelector("input");
+    inp.dataset.name=m.name;
+    inp.checked=inNow.has(m.name);
+    lab.querySelector(".lbl").textContent=m.name;
+    lab.style.borderLeft="4px solid "+m.color;
+    box.appendChild(lab);
+  });
+
+  $("planMembersWrap").classList.remove("hidden");
+  $("sheetPlan").classList.remove("hidden");
+}
+
+$("planTBD").addEventListener("change",()=>{
+  const on=$("planTBD").checked;
+  $("planTime").disabled=on;
+  if(on) $("planTime").value="";
+});
 
 $("btnAddPlan").addEventListener("click",()=>openPlanForm(null));
 
@@ -1484,51 +1560,129 @@ $("btnPlanForDay").addEventListener("click",()=>{
   openPlanForm(k);
 });
 
+/* 為某個行程重新鋪一次「當日有空」嘅自動參加者 */
+async function seedAuto(planId,dateStr){
+  const blocked=new Set(
+    state.joins.filter(j=>j.plan_id===planId && j.mode==="manual_out").map(j=>j.name)
+  );
+  const already=new Set(
+    state.joins.filter(j=>j.plan_id===planId && j.mode==="manual_in").map(j=>j.name)
+  );
+  const rows=freeOn(dateStr)
+    .filter(n=>!blocked.has(n) && !already.has(n))
+    .map(n=>({plan_id:planId, room_id:state.room.id, name:n, mode:"auto"}));
+
+  if(!rows.length) return;
+  const {error}=await db.from("plan_joins")
+    .upsert(rows,{onConflict:"plan_id,name"});
+  if(error) throw error;
+}
+
 $("planSave").addEventListener("click",async ()=>{
   const d=$("planDate").value;
   const t=$("planTitle").value.trim();
-  const tm=$("planTime").value || null;
+  const tm=$("planTBD").checked ? null : ($("planTime").value || null);
   if(!d) return toast("請揀日期",true);
   if(!t) return toast("請填行程名稱",true);
 
+  const editing=state.editPlanId;
   $("sheetPlan").classList.add("hidden");
+
   try{
-    const {data,error}=await db.from("plans").insert({
-      room_id:state.room.id, plan_date:d, start_time:tm,
-      title:t, created_by:state.me
-    }).select().single();
+    if(!editing){
+      const {data,error}=await db.from("plans").insert({
+        room_id:state.room.id, plan_date:d, start_time:tm,
+        title:t, created_by:state.me
+      }).select().single();
+      if(error) throw error;
+
+      const rows=freeOn(d).map(n=>({
+        plan_id:data.id, room_id:state.room.id, name:n, mode:"auto"
+      }));
+      if(rows.length){
+        const {error:e2}=await db.from("plan_joins").insert(rows);
+        if(e2) throw e2;
+      }
+      await refresh();
+      toast(rows.length ? "行程已建立,已加入 "+rows.length+" 位當日有空嘅人" : "行程已建立");
+      return;
+    }
+
+    const old=state.plans.find(p=>p.id===editing);
+    const dateChanged = old && old.plan_date!==d;
+
+    const {error}=await db.from("plans")
+      .update({plan_date:d, start_time:tm, title:t}).eq("id",editing);
     if(error) throw error;
 
-    // 建立者自動參加
-    await db.from("plan_joins").insert({
-      plan_id:data.id, room_id:state.room.id, name:state.me
+    // 收集剔選結果
+    const boxes=[...$("planMembers").querySelectorAll("input[data-name]")];
+    const wanted=new Set(boxes.filter(b=>b.checked).map(b=>b.dataset.name));
+    const upserts=[];
+    const nowFree=new Set(freeOn(d));
+
+    boxes.forEach(b=>{
+      const n=b.dataset.name;
+      const row=joinRow(editing,n);
+      const isIn=row && row.mode!=="manual_out";
+
+      if(wanted.has(n) && !isIn){
+        upserts.push({plan_id:editing, room_id:state.room.id, name:n, mode:"manual_in"});
+      }else if(!wanted.has(n) && (isIn || nowFree.has(n))){
+        // 剔走,並且封住日後自動加入
+        upserts.push({plan_id:editing, room_id:state.room.id, name:n, mode:"manual_out"});
+      }
     });
 
+    if(upserts.length){
+      const {error:e3}=await db.from("plan_joins")
+        .upsert(upserts,{onConflict:"plan_id,name"});
+      if(e3) throw e3;
+    }
+
+    if(dateChanged){
+      // 改咗日期,原本跟舊日子入嚟嘅自動參加者要換過
+      await db.from("plan_joins").delete()
+        .eq("plan_id",editing).eq("mode","auto");
+      await loadData();
+      await seedAuto(editing,d);
+    }
+
     await refresh();
-    toast("行程已建立");
+    toast("行程已更新");
   }catch(e){
     state.lastError=errText(e); diag();
-    toast("建立失敗:"+state.lastError,true);
+    toast((editing?"更新":"建立")+"失敗:"+state.lastError,true);
+  }finally{
+    state.editPlanId=null;
   }
 });
 
-async function togglePlanJoin(planId){
-  const joined=state.joins.some(j=>j.plan_id===planId && j.name===state.me);
-  try{
-    if(joined){
-      const {error}=await db.from("plan_joins").delete()
-        .eq("plan_id",planId).eq("name",state.me);
-      if(error) throw error;
+/* 揀咗當日有空 → 自動加入嗰日所有行程;取消有空 → 抽走自動加入嗰啲 */
+async function syncPlansForVote(dateStr,hasSlot){
+  const plans=state.plans.filter(p=>p.plan_date===dateStr);
+  if(!plans.length) return;
+
+  const adds=[];
+  const dels=[];
+
+  for(const p of plans){
+    const row=joinRow(p.id,state.me);
+    if(hasSlot){
+      if(!row) adds.push({plan_id:p.id, room_id:state.room.id, name:state.me, mode:"auto"});
     }else{
-      const {error}=await db.from("plan_joins").insert({
-        plan_id:planId, room_id:state.room.id, name:state.me
-      });
-      if(error && error.code!=="23505") throw error;
+      if(row && row.mode==="auto") dels.push(p.id);
     }
-    await refresh();
-  }catch(e){
-    state.lastError=errText(e); diag();
-    toast("操作失敗:"+state.lastError,true);
+  }
+
+  if(adds.length){
+    const {error}=await db.from("plan_joins").upsert(adds,{onConflict:"plan_id,name"});
+    if(error) throw error;
+  }
+  for(const pid of dels){
+    const {error}=await db.from("plan_joins").delete()
+      .eq("plan_id",pid).eq("name",state.me).eq("mode","auto");
+    if(error) throw error;
   }
 }
 
@@ -1838,9 +1992,8 @@ function renderPlans(){
   const admin=meIsAdmin();
 
   plans.forEach(p=>{
-    const names=state.joins.filter(j=>j.plan_id===p.id).map(j=>j.name)
+    const names=joinedNames(p.id)
       .sort((a,b)=>(order.has(a)?order.get(a):999)-(order.has(b)?order.get(b):999));
-    const joined=names.includes(state.me);
     const [yy,mm,dd]=p.plan_date.split("-").map(Number);
 
     const li=document.createElement("li");
@@ -1849,7 +2002,7 @@ function renderPlans(){
     g.className="pgrid";
     g.innerHTML=
       '<span class="pdate">'+mm+'/'+dd+'<small>星期'+weekOf(p.plan_date)+'</small></span>'+
-      '<span class="ptime">'+(p.start_time||"—")+'</span>'+
+      '<span class="ptime">'+(p.start_time||"待定")+'</span>'+
       '<span class="ptitle"></span>'+
       '<span class="pcount">'+names.length+' 人</span>';
     g.querySelector(".ptitle").textContent=p.title;
@@ -1862,7 +2015,7 @@ function renderPlans(){
     }else{
       const e=document.createElement("span");
       e.className="empty";
-      e.textContent="仲未有人參加";
+      e.textContent="當日仲未有人得閒";
       mem.appendChild(e);
     }
     li.appendChild(mem);
@@ -1870,20 +2023,19 @@ function renderPlans(){
     const acts=document.createElement("div");
     acts.className="pacts";
 
-    const jb=document.createElement("button");
-    jb.type="button";
-    jb.className=joined?"on":"";
-    jb.textContent=joined?"已參加":"參加";
-    jb.addEventListener("click",()=>togglePlanJoin(p.id));
-    acts.appendChild(jb);
+    const eb=document.createElement("button");
+    eb.type="button";
+    eb.textContent="編輯";
+    eb.addEventListener("click",()=>openPlanEdit(p));
+    acts.appendChild(eb);
 
     if(admin || p.created_by===state.me){
-      const db2=document.createElement("button");
-      db2.type="button";
-      db2.className="del";
-      db2.textContent="刪除";
-      db2.addEventListener("click",()=>deletePlan(p.id,p.title));
-      acts.appendChild(db2);
+      const rm=document.createElement("button");
+      rm.type="button";
+      rm.className="del";
+      rm.textContent="刪除";
+      rm.addEventListener("click",()=>deletePlan(p.id,p.title));
+      acts.appendChild(rm);
     }
 
     li.appendChild(acts);
