@@ -660,6 +660,8 @@ async function send(message) {
         : await sb.rpc("g1_ready", { p_token: S.token });
 
       if (error) throw error;
+    } else if (t === "g2:pick") {
+      await sb.rpc("g2_pick", { p_token: S.token, p_target: message.targetId });
     } else if (t === "g2:judge") {
       await sb.rpc("g2_judge", { p_token: S.token, p_target: message.targetId });
     } else if (t === "g2:next") {
@@ -1411,9 +1413,55 @@ function renderGame2(game) {
   if (game.phase === "prep") {
     html += `
       <div class="status">
-        準備 30 秒。
+        睇題目 30 秒。
         只有老實人收到正確解釋。
       </div>
+    `;
+  }
+
+  if (game.phase === "picking") {
+    const isJudge = game.judgeId === S.playerId;
+    const left = (game.candidates || []).length;
+
+    html += `
+      <div
+        class="eyebrow"
+        style="margin-top:18px"
+      >
+        WHO SPEAKS NEXT
+      </div>
+
+      ${
+        isJudge
+          ? `
+            <div class="status">
+              10 秒內揀下一位發言。
+              唔揀就隨機。
+            </div>
+
+            <div class="choice-grid">
+              ${
+                (game.candidates || [])
+                  .map(
+                    (player) => `
+                      <button
+                        class="choice"
+                        onclick="pick2('${player.id}')"
+                      >
+                        ${esc(player.nickname)}
+                      </button>
+                    `
+                  )
+                  .join("")
+              }
+            </div>
+          `
+          : `
+            <div class="status">
+              諗樣揀緊下一位發言（仲有 ${left} 位未講）。
+            </div>
+          `
+      }
     `;
   }
     if (game.phase === "speaking") {
@@ -1439,9 +1487,13 @@ function renderGame2(game) {
 
         ${
           mine
-            ? " · 輪到你喇。"
+            ? " · 輪到你喇，30 秒。"
             : ""
         }
+
+        <span class="muted">
+          （${(game.spokenIds || []).length}/${(game.order || []).length} 已發言）
+        </span>
       </div>
 
       <div
@@ -1519,12 +1571,17 @@ function renderGame2(game) {
         class="eyebrow"
         style="margin-top:18px"
       >
-        JUDGE
+        WHO IS THE 老實人
       </div>
 
       ${
         isJudge
           ? `
+            <div class="status">
+              2 分鐘內揀出你認為嘅老實人。
+              唔揀就隨機。
+            </div>
+
             <div class="choice-grid">
               ${
                 (game.choices || [])
@@ -1546,7 +1603,7 @@ function renderGame2(game) {
           `
           : `
             <div class="status">
-              諗樣揀緊佢認為嘅老實人。
+              諗樣有 2 分鐘揀出老實人。
             </div>
           `
       }
@@ -1628,6 +1685,13 @@ window.chat2 = () => {
     button.disabled = true;
     button.classList.remove("ready");
   }
+};
+
+window.pick2 = (targetId) => {
+  send({
+    type: "g2:pick",
+    targetId
+  });
 };
 
 window.judge2 = (targetId) => {
