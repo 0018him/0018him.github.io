@@ -314,8 +314,8 @@ function teardown() {
   S.channel = null;
 }
 
-async function fetchState() {
-  const { data, error } = await sb.rpc("get_state", {
+async function fetchState(advance = true) {
+  const { data, error } = await sb.rpc(advance ? "sync" : "get_state", {
     p_code: S.room.code,
     p_token: S.token
   });
@@ -325,16 +325,22 @@ async function fetchState() {
   return data;
 }
 
-async function refresh() {
+async function refresh(advance = true) {
   if (!S.room || S.busy) return;
 
   S.busy = true;
 
   try {
-    const room = await fetchState();
+    const room = await fetchState(advance);
     handleServerMessage({ type: "state", room });
-  } catch {
-    /* 靜靜哋失敗，下次心跳會再試 */
+    S.failed = 0;
+  } catch (error) {
+    S.failed = (S.failed || 0) + 1;
+
+    // 連續失敗三次先出聲，避免一下網絡抖動就彈字
+    if (S.failed === 3) {
+      flash("同步出錯：" + error.message);
+    }
   } finally {
     S.busy = false;
   }
@@ -362,12 +368,12 @@ function subscribe(code) {
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "rooms", filter: "code=eq." + code },
-      () => refresh()
+      () => refresh(false)
     )
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "players", filter: "room_code=eq." + code },
-      () => refresh()
+      () => refresh(false)
     )
     .on(
       "postgres_changes",
@@ -403,7 +409,7 @@ function startLoops() {
   clearInterval(S.beat);
   clearInterval(S.loop);
 
-  // 心跳：保持在線狀態，順便對一次帳
+  // 心跳：保持在線狀態（refresh 本身已經會推進階段）
   S.beat = setInterval(() => {
     if (!S.token) return;
 
@@ -411,19 +417,17 @@ function startLoops() {
     refresh();
   }, 15000);
 
-  // 計時守衛：時間到就叫伺服器推進階段
+  // 計時守衛：夠鐘就叫 sync 推進階段
   S.loop = setInterval(() => {
     const endsAt = S.room?.gameState?.endsAt;
 
-    if (!endsAt || Date.now() < endsAt + 300) return;
-    if (S.ticking) return;
+    if (!endsAt) return;
 
-    S.ticking = true;
+    const over = Date.now() >= endsAt;
 
-    sb.rpc("tick", { p_code: S.room.code }).finally(() => {
-      S.ticking = false;
-    });
-  }, 500);
+    // 夠鐘之後每秒試一次，最多試到有人成功推進為止
+    if (over) refresh();
+  }, 1000);
 }
 
 async function connectRoom(code, mode, saved = null) {
