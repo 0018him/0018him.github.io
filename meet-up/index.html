@@ -1246,7 +1246,7 @@ async function doJoin(code,name,supplied){
     if(error) throw error;
     if(!data){ toast("搵唔到呢個房間號碼",true); return; }
 
-    const ok = await isAuthorised(data, supplied);
+    const ok = await isAuthorised(data, supplied, name);
     if(!ok){
       state.pendingJoin={room:data,name};
       openGate(data);
@@ -1265,8 +1265,9 @@ async function doJoin(code,name,supplied){
   }
 }
 
-/* 授權:入過房嘅裝置永久免密碼,否則要密碼相符 */
-async function isAuthorised(room,supplied){
+/* 授權:入過房嘅裝置永久免密碼,否則要密碼相符
+   過渡期:device_id 功能之前入過房嘅舊成員,名字對得上就放行 */
+async function isAuthorised(room,supplied,name){
   if(!room.secret) return true;                  // 未設密碼嘅房間照舊放行
 
   const saved = getSecret(room.room_code);
@@ -1278,6 +1279,13 @@ async function isAuthorised(room,supplied){
   const {data}=await db.from("members")
     .select("name").eq("room_id",room.id).eq("device_id",DEVICE_ID).limit(1);
   if(data && data.length) return true;
+
+  // 過渡:舊成員紀錄冇裝置編號,名字對得上就當已授權
+  if(name){
+    const {data:legacy}=await db.from("members")
+      .select("name, device_id").eq("room_id",room.id).eq("name",name).maybeSingle();
+    if(legacy && !legacy.device_id) return true;
+  }
 
   return false;
 }
