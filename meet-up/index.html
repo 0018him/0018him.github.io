@@ -191,9 +191,21 @@
 
   /* ---------- 房間標頭 ---------- */
   .roomhead{
-    display:flex; align-items:flex-start; justify-content:space-between;
-    gap:14px; padding-bottom:16px; border-bottom:1px solid var(--line); margin-bottom:14px;
+    display:flex; align-items:flex-start; gap:12px;
+    padding-bottom:16px; border-bottom:1px solid var(--line); margin-bottom:14px;
   }
+
+  .rh-text{flex:1; min-width:0;}
+
+  .avatar{
+    flex:none; width:52px; height:52px; border-radius:50%;
+    border:1px solid var(--line); background:var(--paper-2);
+    padding:0; overflow:hidden; cursor:pointer; position:relative;
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  .avatar img{width:100%; height:100%; object-fit:cover; display:block;}
+  .avatar span{font-family:var(--mono); font-size:18px; color:var(--ink-soft);}
 
   .roomhead h1{
     font-family:var(--serif); font-weight:700; font-size:24px;
@@ -236,6 +248,30 @@
   }
 
   /* ---------- 成員 ---------- */
+  .pwbar{
+    display:flex; align-items:center; gap:10px;
+    padding:9px 12px; margin-bottom:18px;
+    background:var(--paper-2); border:1px solid var(--line); border-radius:2px;
+  }
+
+  .pwlabel{
+    font-family:var(--mono); font-size:10px; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--ink-soft);
+  }
+
+  .pwval{
+    font-family:var(--mono); font-size:14px; font-weight:600;
+    letter-spacing:.12em; word-break:break-all;
+  }
+
+  .pwedit{
+    margin-left:auto; flex:none; background:none;
+    border:1px solid var(--line); border-radius:2px;
+    padding:4px 9px; cursor:pointer;
+    font-family:var(--mono); font-size:10px;
+    letter-spacing:.12em; color:var(--ink-soft);
+  }
+
   .members{display:flex; flex-wrap:wrap; gap:6px;}
 
   .mchip{
@@ -489,6 +525,27 @@
 
   .group-label:first-of-type{margin-top:0;}
 
+  .cropstage{
+    position:relative; width:300px; max-width:100%;
+    aspect-ratio:1/1; margin:0 auto 14px;
+    background:#DEDFDA; border:1px solid var(--line);
+    border-radius:2px; overflow:hidden; touch-action:none; cursor:grab;
+  }
+
+  .cropstage canvas{width:100%; height:100%; display:block;}
+
+  .cropmask{
+    position:absolute; inset:0; pointer-events:none;
+    background:rgba(234,235,230,.72);
+    -webkit-mask:radial-gradient(circle at 50% 50%, transparent 49%, #000 49.5%);
+    mask:radial-gradient(circle at 50% 50%, transparent 49%, #000 49.5%);
+  }
+
+  .zoom{
+    display:block; width:100%; margin:0 0 18px;
+    accent-color:var(--dip-5);
+  }
+
   .stack{display:flex; flex-direction:column; gap:9px;}
 
   .toast{
@@ -605,8 +662,12 @@
     </div>
 
     <div class="roomhead">
-      <div>
-        <h1><span id="roomTitle">—</span><button class="editname hidden" id="btnRename">改名</button></h1>
+      <button class="avatar" id="roomAvatar" title="換頭像">
+        <img id="avatarImg" alt="" class="hidden">
+        <span id="avatarFallback">＋</span>
+      </button>
+      <div class="rh-text">
+        <h1><span id="roomTitle">—</span><button class="editname" id="btnRename">改名</button></h1>
         <div class="who" id="roomWho">—</div>
       </div>
       <button class="seal" id="roomCode" title="複製邀請連結">
@@ -615,9 +676,17 @@
       </button>
     </div>
 
+    <input type="file" id="avatarFile" accept="image/*" class="hidden">
+
     <div class="statusbar">
       <span class="live" id="liveTag"><i></i><span>連線中</span></span>
       <button class="sync" id="btnSync">重新載入</button>
+    </div>
+
+    <div class="pwbar">
+      <span class="pwlabel">房間密碼</span>
+      <span class="pwval" id="secretText">—</span>
+      <button class="pwedit" id="btnSecret">更改</button>
     </div>
 
     <div class="card" style="margin-bottom:18px">
@@ -647,8 +716,8 @@
         <div class="segtoggle" id="segFilter">
           <button type="button" data-f="all" class="on">全時段</button>
           <button type="button" data-f="day">約全日</button>
-          <button type="button" data-f="night">約夜晚</button>
           <button type="button" data-f="noon">約日頭</button>
+          <button type="button" data-f="night">約夜晚</button>
         </div>
       </div>
 
@@ -671,7 +740,7 @@
       </div>
 
       <ul class="plans" id="planList"></ul>
-      <p class="empty hidden" id="planEmpty">仲未有行程。夾好日子之後,撳「＋ 新增」開一個。</p>
+      <p class="empty hidden" id="planEmpty">呢個月仲未有行程。夾好日子之後,撳「＋ 新增」開一個。</p>
     </div>
 
     <div class="foot">
@@ -804,6 +873,57 @@
   </div>
 </div>
 
+<!-- 密碼閘 -->
+<div class="sheet hidden" id="sheetGate">
+  <div class="sheet-inner">
+    <h3>輸入房間密碼</h3>
+    <p class="sheet-sub" id="gateRoom">—</p>
+    <p class="empty" style="margin-bottom:14px">呢部裝置第一次入呢間房。入咗之後就唔使再輸。</p>
+    <div class="field">
+      <label for="gateInput">密碼</label>
+      <input id="gateInput" type="text" autocomplete="off" autocapitalize="off" spellcheck="false">
+    </div>
+    <div class="stack">
+      <button class="btn" id="gateSubmit">入房</button>
+      <button class="btn btn-quiet" id="gateClose">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 改密碼 -->
+<div class="sheet hidden" id="sheetSecret">
+  <div class="sheet-inner">
+    <h3>房間密碼</h3>
+    <p class="sheet-sub">俾新朋友第一次入房用</p>
+    <div class="field">
+      <label for="secretInput">密碼（最少 6 個字元）</label>
+      <input id="secretInput" type="text" autocomplete="off" autocapitalize="off" spellcheck="false">
+    </div>
+    <p class="empty" style="margin-bottom:14px">改咗之後,已經入過房嘅裝置唔受影響,照樣入得。</p>
+    <div class="stack">
+      <button class="btn" id="secretSave">儲存</button>
+      <button class="btn btn-quiet" id="secretClose">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 頭像裁剪 -->
+<div class="sheet hidden" id="sheetCrop">
+  <div class="sheet-inner">
+    <h3>調整頭像</h3>
+    <p class="sheet-sub">拖動移位,用滑桿放大縮細</p>
+    <div class="cropstage" id="cropStage">
+      <canvas id="cropCanvas" width="300" height="300"></canvas>
+      <div class="cropmask"></div>
+    </div>
+    <input type="range" id="cropZoom" min="100" max="400" value="100" class="zoom">
+    <div class="stack">
+      <button class="btn" id="cropSave">套用</button>
+      <button class="btn btn-quiet" id="cropClose">取消</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -850,12 +970,28 @@ function textOn(hex){
 /* =====================================================
    狀態
    ===================================================== */
+/* 裝置 ID:第一次開網頁時產生,之後長期存喺呢部機 */
+function getDeviceId(){
+  let id=null;
+  try{ id=localStorage.getItem("deviceId"); }catch(e){}
+  if(!id){
+    id = (crypto.randomUUID ? crypto.randomUUID()
+         : "d-"+Date.now()+"-"+Math.random().toString(36).slice(2,11));
+    try{ localStorage.setItem("deviceId",id); }catch(e){}
+  }
+  return id;
+}
+
+const DEVICE_ID = getDeviceId();
+
 const state = {
   room:null, me:"", votes:[], members:[], plans:[], joins:[],
   cursor:new Date(), channel:null,
   rtStatus:"未連線", lastSync:null, lastError:"",
   busy:new Set(), pollTimer:null, openKey:null,
-  filter:"all", mgName:null, editPlanId:null
+  filter:"all", mgName:null, editPlanId:null,
+  barSig:"", pendingJoin:null, cropImg:null,
+  crop:{scale:1,x:0,y:0}
 };
 
 /* =====================================================
@@ -1027,7 +1163,14 @@ async function ensureMember(room,name){
   const {data:existing,error:e1}=await db.from("members")
     .select().eq("room_id",room.id).eq("name",name).maybeSingle();
   if(e1) throw e1;
-  if(existing) return existing;
+  if(existing){
+    // 舊成員仲未有裝置紀錄,順手補上
+    if(!existing.device_id){
+      await db.from("members").update({device_id:DEVICE_ID})
+        .eq("room_id",room.id).eq("name",name);
+    }
+    return existing;
+  }
 
   for(let attempt=0;attempt<6;attempt++){
     const {data:taken,error:e2}=await db.from("members")
@@ -1042,7 +1185,8 @@ async function ensureMember(room,name){
     const admin = (taken||[]).length===0 || (room.owner && room.owner===name);
 
     const {data,error}=await db.from("members")
-      .insert({room_id:room.id,name,color:free,is_admin:admin}).select().single();
+      .insert({room_id:room.id,name,color:free,is_admin:admin,device_id:DEVICE_ID})
+      .select().single();
     if(!error) return data;
 
     if(error.code==="23505"){
@@ -1094,15 +1238,24 @@ $("btnJoin").addEventListener("click", ()=>{
   doJoin(code,name);
 });
 
-async function doJoin(code,name){
+async function doJoin(code,name,supplied){
   const btn=$("btnJoin");
   btn.disabled=true; btn.textContent="搵緊房間…";
   try{
     const {data,error}=await db.from("rooms").select().eq("room_code",code).maybeSingle();
     if(error) throw error;
     if(!data){ toast("搵唔到呢個房間號碼",true); return; }
+
+    const ok = await isAuthorised(data, supplied);
+    if(!ok){
+      state.pendingJoin={room:data,name};
+      openGate(data);
+      return;
+    }
+
     state.me=name;
     store.set("myName",name);
+    if(data.secret) rememberSecret(code,data.secret);
     await enterRoom(data);
   }catch(e){
     state.lastError=errText(e); diag();
@@ -1111,6 +1264,54 @@ async function doJoin(code,name){
     btn.disabled=false; btn.textContent="加入";
   }
 }
+
+/* 授權:入過房嘅裝置永久免密碼,否則要密碼相符 */
+async function isAuthorised(room,supplied){
+  if(!room.secret) return true;                  // 未設密碼嘅房間照舊放行
+
+  const saved = getSecret(room.room_code);
+  if(saved && saved===room.secret) return true;  // 本機記住咗
+
+  if(supplied && supplied===room.secret) return true;
+
+  // 呢部裝置曾經以任何名字入過呢間房
+  const {data}=await db.from("members")
+    .select("name").eq("room_id",room.id).eq("device_id",DEVICE_ID).limit(1);
+  if(data && data.length) return true;
+
+  return false;
+}
+
+function getSecrets(){
+  try{ return JSON.parse(store.get("roomSecrets")||"{}"); }catch(e){ return {}; }
+}
+
+function getSecret(code){ return getSecrets()[code]||null; }
+
+function rememberSecret(code,secret){
+  const all=getSecrets();
+  all[code]=secret;
+  store.set("roomSecrets",JSON.stringify(all));
+}
+
+function openGate(room){
+  $("gateRoom").textContent=(room.title||"未命名房間")+"（"+room.room_code+"）";
+  $("gateInput").value="";
+  $("sheetGate").classList.remove("hidden");
+  setTimeout(()=>$("gateInput").focus(),250);
+}
+
+$("gateSubmit").addEventListener("click",async ()=>{
+  const pj=state.pendingJoin;
+  if(!pj) return;
+  const pw=$("gateInput").value.trim();
+  if(!pw) return toast("請輸入密碼",true);
+  if(pw!==pj.room.secret) return toast("密碼唔啱",true);
+
+  $("sheetGate").classList.add("hidden");
+  state.pendingJoin=null;
+  await doJoin(pj.room.room_code, pj.name, pw);
+});
 
 async function enterRoom(room){
   stopPolling();
@@ -1130,6 +1331,9 @@ async function enterRoom(room){
   $("roomTitle").textContent=room.title||"未命名房間";
   $("roomWho").textContent="你係:"+state.me;
   $("roomCodeText").textContent=room.room_code;
+  paintAvatar();
+  paintSecret();
+  state.barSig="";
   window.scrollTo(0,0);
 
   if(location.hash!=="#r="+room.room_code){
@@ -1200,15 +1404,16 @@ $("btnLeaveRoom").addEventListener("click", async ()=>{
    ===================================================== */
 async function loadData(){
   const rid=state.room.id;
-  const [v,m,p,j]=await Promise.all([
+  const [v,m,p,j,rm]=await Promise.all([
     db.from("votes").select("name, vote_date, slot").eq("room_id",rid),
     db.from("members").select("name, color, is_admin, created_at").eq("room_id",rid)
       .order("created_at",{ascending:true}),
     db.from("plans").select("id, plan_date, start_time, title, created_by").eq("room_id",rid),
-    db.from("plan_joins").select("plan_id, name, mode").eq("room_id",rid)
+    db.from("plan_joins").select("plan_id, name, mode").eq("room_id",rid),
+    db.from("rooms").select("id, room_code, title, owner, secret, avatar_url").eq("id",rid).maybeSingle()
   ]);
 
-  const bad=v.error||m.error||p.error||j.error;
+  const bad=v.error||m.error||p.error||j.error||rm.error;
   if(bad){
     state.lastError=errText(bad); diag();
     toast("讀取失敗:"+state.lastError,true);
@@ -1219,6 +1424,13 @@ async function loadData(){
   state.members=m.data||[];
   state.plans=p.data||[];
   state.joins=j.data||[];
+
+  // 房間資料可能俾其他成員改咗(名、頭像、密碼)
+  if(rm.data){
+    state.room=rm.data;
+    if(rm.data.secret) rememberSecret(rm.data.room_code,rm.data.secret);
+  }
+
   state.lastSync=new Date();
   state.lastError="";
   diag();
@@ -1266,6 +1478,8 @@ function subscribe(){
     .on("postgres_changes",{event:"*",schema:"public",table:"members",filter:f}, bump)
     .on("postgres_changes",{event:"*",schema:"public",table:"plans",filter:f}, bump)
     .on("postgres_changes",{event:"*",schema:"public",table:"plan_joins",filter:f}, bump)
+    .on("postgres_changes",
+      {event:"UPDATE",schema:"public",table:"rooms",filter:"id=eq."+state.room.id}, bump)
     .subscribe(status=>{
       state.rtStatus=status;
       const tag=$("liveTag");
@@ -1304,7 +1518,7 @@ async function setVote(key,slot){
       if(error) throw error;
     }else{
       const {error}=await db.from("votes").upsert(
-        {room_id:state.room.id,name:state.me,vote_date:key,slot},
+        {room_id:state.room.id,name:state.me,vote_date:key,slot,device_id:DEVICE_ID},
         {onConflict:"room_id,name,vote_date"}
       );
       if(error) throw error;
@@ -1325,7 +1539,8 @@ async function setVote(key,slot){
    彈出層
    ===================================================== */
 function closeAllSheets(){
-  ["sheetDay","sheetColor","sheetMember","sheetRename","sheetPlan"]
+  ["sheetDay","sheetColor","sheetMember","sheetRename","sheetPlan",
+   "sheetGate","sheetSecret","sheetCrop"]
     .forEach(id=>$(id).classList.add("hidden"));
 }
 
@@ -1341,6 +1556,9 @@ bindSheet("sheetMember","mgClose",()=>{ state.mgName=null; });
 bindSheet("sheetRename","renameClose");
 bindSheet("sheetPlan","planClose",()=>{ state.editPlanId=null; });
 bindSheet("sheetDay","sheetDayClose",()=>{ state.openKey=null; });
+bindSheet("sheetGate","gateClose",()=>{ state.pendingJoin=null; });
+bindSheet("sheetSecret","secretClose");
+bindSheet("sheetCrop","cropClose",()=>{ state.cropImg=null; });
 
 /* =====================================================
    換顏色
@@ -1396,8 +1614,190 @@ async function pickColor(hex){
 }
 
 /* =====================================================
-   房管
+   房間頭像:揀相 → 拖動縮放 → 裁成 400×400 上傳
    ===================================================== */
+const CROP_BOX = 300;   // 舞台邊長(CSS px,亦即 canvas 尺寸)
+const OUT_SIZE = 400;   // 上傳尺寸
+
+$("roomAvatar").addEventListener("click",()=>$("avatarFile").click());
+
+$("avatarFile").addEventListener("change",e=>{
+  const f=e.target.files && e.target.files[0];
+  e.target.value="";
+  if(!f) return;
+  if(!/^image\//.test(f.type)) return toast("請揀一張圖片",true);
+
+  const rd=new FileReader();
+  rd.onload=()=>{
+    const img=new Image();
+    img.onload=()=>{
+      state.cropImg=img;
+      // 初始縮放:短邊剛好鋪滿方框
+      const base=Math.max(CROP_BOX/img.width, CROP_BOX/img.height);
+      state.crop={scale:base, base:base, x:0, y:0};
+      $("cropZoom").value=100;
+      $("sheetCrop").classList.remove("hidden");
+      drawCrop();
+    };
+    img.onerror=()=>toast("讀取圖片失敗",true);
+    img.src=rd.result;
+  };
+  rd.onerror=()=>toast("讀取檔案失敗",true);
+  rd.readAsDataURL(f);
+});
+
+function clampCrop(){
+  const img=state.cropImg;
+  if(!img) return;
+  const w=img.width*state.crop.scale;
+  const h=img.height*state.crop.scale;
+  const maxX=Math.max(0,(w-CROP_BOX)/2);
+  const maxY=Math.max(0,(h-CROP_BOX)/2);
+  state.crop.x=Math.min(maxX,Math.max(-maxX,state.crop.x));
+  state.crop.y=Math.min(maxY,Math.max(-maxY,state.crop.y));
+}
+
+function drawCrop(){
+  const img=state.cropImg;
+  if(!img) return;
+  clampCrop();
+
+  const cv=$("cropCanvas");
+  const ctx=cv.getContext("2d");
+  ctx.fillStyle="#DEDFDA";
+  ctx.fillRect(0,0,CROP_BOX,CROP_BOX);
+
+  const w=img.width*state.crop.scale;
+  const h=img.height*state.crop.scale;
+  ctx.drawImage(img,(CROP_BOX-w)/2+state.crop.x,(CROP_BOX-h)/2+state.crop.y,w,h);
+}
+
+$("cropZoom").addEventListener("input",()=>{
+  if(!state.cropImg) return;
+  state.crop.scale=state.crop.base*($("cropZoom").value/100);
+  drawCrop();
+});
+
+(function bindDrag(){
+  const stage=$("cropStage");
+  let dragging=false,lx=0,ly=0;
+
+  const start=e=>{
+    if(!state.cropImg) return;
+    dragging=true;
+    const p=e.touches?e.touches[0]:e;
+    lx=p.clientX; ly=p.clientY;
+    stage.style.cursor="grabbing";
+  };
+
+  const move=e=>{
+    if(!dragging) return;
+    e.preventDefault();
+    const p=e.touches?e.touches[0]:e;
+    const rect=stage.getBoundingClientRect();
+    const k=CROP_BOX/rect.width;          // 舞台被 CSS 縮細時要換算
+    state.crop.x+=(p.clientX-lx)*k;
+    state.crop.y+=(p.clientY-ly)*k;
+    lx=p.clientX; ly=p.clientY;
+    drawCrop();
+  };
+
+  const end=()=>{ dragging=false; stage.style.cursor="grab"; };
+
+  stage.addEventListener("mousedown",start);
+  window.addEventListener("mousemove",move);
+  window.addEventListener("mouseup",end);
+  stage.addEventListener("touchstart",start,{passive:true});
+  stage.addEventListener("touchmove",move,{passive:false});
+  stage.addEventListener("touchend",end);
+})();
+
+$("cropSave").addEventListener("click",async ()=>{
+  if(!state.cropImg || !state.room) return;
+  const btn=$("cropSave");
+  btn.disabled=true; btn.textContent="上載中…";
+
+  try{
+    const out=document.createElement("canvas");
+    out.width=OUT_SIZE; out.height=OUT_SIZE;
+    const ctx=out.getContext("2d");
+    const k=OUT_SIZE/CROP_BOX;
+    const img=state.cropImg;
+    const w=img.width*state.crop.scale*k;
+    const h=img.height*state.crop.scale*k;
+    ctx.fillStyle="#F3F4F0";
+    ctx.fillRect(0,0,OUT_SIZE,OUT_SIZE);
+    ctx.drawImage(img,(OUT_SIZE-w)/2+state.crop.x*k,(OUT_SIZE-h)/2+state.crop.y*k,w,h);
+
+    const blob=await new Promise(res=>out.toBlob(res,"image/jpeg",0.85));
+    if(!blob) throw new Error("無法產生圖片");
+
+    const path=state.room.id+"/"+Date.now()+".jpg";
+    const {error}=await db.storage.from("avatars")
+      .upload(path,blob,{contentType:"image/jpeg",upsert:true});
+    if(error) throw error;
+
+    const {data:pub}=db.storage.from("avatars").getPublicUrl(path);
+    const url=pub.publicUrl;
+
+    const {error:e2}=await db.from("rooms").update({avatar_url:url}).eq("id",state.room.id);
+    if(e2) throw e2;
+
+    state.room.avatar_url=url;
+    paintAvatar();
+    $("sheetCrop").classList.add("hidden");
+    state.cropImg=null;
+    toast("頭像已更新");
+  }catch(e){
+    state.lastError=errText(e); diag();
+    toast("上載失敗:"+state.lastError,true);
+  }finally{
+    btn.disabled=false; btn.textContent="套用";
+  }
+});
+
+function paintAvatar(){
+  const url=state.room && state.room.avatar_url;
+  const img=$("avatarImg");
+  if(url){
+    img.src=url;
+    img.classList.remove("hidden");
+    $("avatarFallback").classList.add("hidden");
+  }else{
+    img.classList.add("hidden");
+    img.removeAttribute("src");
+    $("avatarFallback").classList.remove("hidden");
+  }
+}
+
+/* =====================================================
+   改密碼
+   ===================================================== */
+$("btnSecret").addEventListener("click",()=>{
+  $("secretInput").value=state.room.secret||"";
+  $("sheetSecret").classList.remove("hidden");
+});
+
+$("secretSave").addEventListener("click",async ()=>{
+  const v=$("secretInput").value.trim();
+  if(v.length<6) return toast("密碼最少要 6 個字元",true);
+  $("sheetSecret").classList.add("hidden");
+  try{
+    const {error}=await db.from("rooms").update({secret:v}).eq("id",state.room.id);
+    if(error) throw error;
+    state.room.secret=v;
+    rememberSecret(state.room.room_code,v);
+    paintSecret();
+    toast("密碼已更新");
+  }catch(e){
+    state.lastError=errText(e); diag();
+    toast("改密碼失敗:"+state.lastError,true);
+  }
+});
+
+function paintSecret(){
+  $("secretText").textContent=(state.room && state.room.secret) || "—";
+}
 function openMemberAdmin(name){
   const m=state.members.find(x=>x.name===name);
   if(!m) return;
@@ -1592,7 +1992,7 @@ $("planSave").addEventListener("click",async ()=>{
     if(!editing){
       const {data,error}=await db.from("plans").insert({
         room_id:state.room.id, plan_date:d, start_time:tm,
-        title:t, created_by:state.me
+        title:t, created_by:state.me, device_id:DEVICE_ID
       }).select().single();
       if(error) throw error;
 
@@ -1789,13 +2189,17 @@ function tally(){
 
 function render(){
   const map=tally();
+  if(state.room){
+    $("roomTitle").textContent=state.room.title||"未命名房間";
+    paintAvatar();
+    paintSecret();
+  }
   renderMembers();
   renderGrid(map);
   renderBars(map);
   renderPlans();
   renderRoomList();
   paintDay();
-  $("btnRename").classList.toggle("hidden",!meIsAdmin());
   $("adminHint").classList.toggle("hidden",!meIsAdmin());
 }
 
@@ -1965,13 +2369,22 @@ function renderBars(map){
   $("keyNight").classList.toggle("hidden", state.filter==="day" || state.filter==="noon");
   $("barKeys").classList.toggle("hidden", state.filter==="day");
 
-  drawBars(rows.slice(0,3));
+  const top3=rows.slice(0,3);
+
+  // 內容冇變就唔重畫,免得每次輪詢啲橫條都由零彈一次
+  const sig=state.filter+"|"+prefix+"|"+top3.map(r=>
+    r.key+":"+r.dayCount+","+r.noonCount+","+r.nightCount).join(";");
+  if(sig===state.barSig) return;
+  state.barSig=sig;
+
+  drawBars(top3);
 }
 
 $("segFilter").addEventListener("click",e=>{
   const b=e.target.closest("button[data-f]");
   if(!b) return;
   state.filter=b.dataset.f;
+  state.barSig="";
   [...$("segFilter").querySelectorAll("button")].forEach(x=>x.classList.toggle("on",x===b));
   renderBars(tally());
 });
@@ -1980,12 +2393,19 @@ function renderPlans(){
   const ul=$("planList");
   ul.innerHTML="";
 
-  const plans=state.plans.slice().sort((a,b)=>
-    a.plan_date.localeCompare(b.plan_date) ||
-    (a.start_time||"99:99").localeCompare(b.start_time||"99:99")
-  );
+  // 只顯示日曆而家顯示緊嗰個月
+  const y=state.cursor.getFullYear();
+  const m=state.cursor.getMonth();
+  const prefix=y+"-"+pad(m+1)+"-";
 
-  $("planCount").textContent=plans.length+" 個";
+  const plans=state.plans
+    .filter(p=>p.plan_date.startsWith(prefix))
+    .sort((a,b)=>
+      a.plan_date.localeCompare(b.plan_date) ||
+      (a.start_time||"99:99").localeCompare(b.start_time||"99:99")
+    );
+
+  $("planCount").textContent=(m+1)+" 月 · "+plans.length+" 個";
   $("planEmpty").classList.toggle("hidden",plans.length>0);
 
   const order=new Map(state.members.map((m,i)=>[m.name,i]));
