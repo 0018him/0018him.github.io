@@ -6,13 +6,10 @@
 <title>0018him</title>
 <style>
   :root{
-    --bg:#0e0f13;
-    --card:#171921;
-    --card-hi:#1f2230;
-    --line:#2a2e3d;
-    --txt:#e8e9ee;
-    --dim:#8b8fa3;
-    --accent:#c9a227;
+    --bg:#ffffff;
+    --txt:#1a1a1a;
+    --line:#e4e4e4;
+    --line-hi:#c9c9c9;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   body{
@@ -22,115 +19,79 @@
     color:var(--txt);
     font-family:-apple-system,BlinkMacSystemFont,"PingFang HK","Noto Sans HK","Helvetica Neue",sans-serif;
     display:flex;
+    align-items:center;
     justify-content:center;
-    padding:calc(env(safe-area-inset-top) + 56px) 20px 60px;
+    padding:60px 24px;
   }
-  .wrap{width:100%;max-width:520px;}
-  header{margin-bottom:40px;}
-  h1{
-    font-size:30px;
-    letter-spacing:.06em;
-    margin:0 0 8px;
-    font-weight:600;
-    cursor:default;
-    user-select:none;
-  }
-  h1 .dot{color:var(--accent);}
-  .sub{color:var(--dim);font-size:14px;margin:0;letter-spacing:.04em;}
-  .rule{height:1px;background:var(--line);margin:28px 0;}
+  .wrap{width:100%;max-width:420px;}
   a.item{
     display:block;
     text-decoration:none;
     color:inherit;
-    background:var(--card);
     border:1px solid var(--line);
-    border-radius:14px;
-    padding:18px 20px;
-    margin-bottom:14px;
-    transition:background .18s ease, transform .18s ease, border-color .18s ease;
+    border-radius:12px;
+    padding:22px 24px;
+    margin-bottom:12px;
+    font-size:19px;
+    font-weight:500;
+    letter-spacing:.03em;
+    transition:border-color .18s ease, background .18s ease, transform .18s ease;
   }
   a.item:active{transform:scale(.985);}
   @media (hover:hover){
-    a.item:hover{background:var(--card-hi);border-color:#3a3f52;}
+    a.item:hover{border-color:var(--line-hi);background:#fafafa;}
   }
-  .row{display:flex;align-items:baseline;justify-content:space-between;gap:12px;}
-  .name{font-size:19px;font-weight:600;letter-spacing:.02em;}
-  .path{font-size:12px;color:var(--dim);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;}
-  .desc{margin-top:6px;font-size:13.5px;color:var(--dim);line-height:1.6;}
   .hidden-group{display:none;}
   .hidden-group.on{display:block;animation:fade .35s ease;}
   @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
-  .tag{
-    display:inline-block;
-    font-size:11px;
-    color:var(--accent);
-    border:1px solid var(--accent);
-    border-radius:5px;
-    padding:1px 6px;
-    margin-left:8px;
-    vertical-align:middle;
-    opacity:.75;
+  #knob{
+    display:block;
+    width:44px;
+    height:32px;
+    margin:28px auto 0;
+    cursor:default;
+    user-select:none;
   }
-  footer{margin-top:44px;font-size:12px;color:#555a6b;text-align:center;letter-spacing:.05em;}
+  #knob::after{
+    content:"";
+    display:block;
+    width:4px;
+    height:4px;
+    border-radius:50%;
+    background:#e0e0e0;
+    margin:14px auto 0;
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
 
-  <header>
-    <h1 id="title">0018him<span class="dot">.</span></h1>
-    <p class="sub">一啲自己整嘅小工具同小遊戲</p>
-  </header>
+  <a class="item" href="./meet-up/">夾日子</a>
 
-  <a class="item" href="./meet-up/">
-    <div class="row">
-      <span class="name">夾日子</span>
-      <span class="path">/meet-up</span>
-    </div>
-    <div class="desc">一齊揀時間，睇下邊日大家都得閒。</div>
-  </a>
-
-  <a class="item" href="./boardgame/">
-    <div class="row">
-      <span class="name">派對遊戲</span>
-      <span class="path">/boardgame</span>
-    </div>
-    <div class="desc">心有靈犀一點通 · 9upper 瞎掰王，開房即玩。</div>
-  </a>
+  <a class="item" href="./boardgame/">派對遊戲</a>
 
   <div class="hidden-group" id="secret">
-    <div class="rule"></div>
-    <a class="item" href="./song-parts/">
-      <div class="row">
-        <span class="name">歌曲分部<span class="tag">內部</span></span>
-        <span class="path">/song-parts</span>
-      </div>
-      <div class="desc">分句、走位同練習用嘅工具。</div>
-    </a>
+    <a class="item" href="./song-parts/">歌曲分部</a>
   </div>
 
-  <footer>© 0018him</footer>
+  <div id="knob"></div>
 </div>
 
 <script>
 (function(){
   var box = document.getElementById('secret');
-  var title = document.getElementById('title');
+  var knob = document.getElementById('knob');
 
-  function reveal(){
-    box.classList.add('on');
-  }
+  function reveal(){ box.classList.add('on'); }
 
-  // 方法一：網址帶 #all 或 ?all
   function checkUrl(){
     if (location.hash === '#all' || new URLSearchParams(location.search).has('all')) reveal();
   }
   checkUrl();
   window.addEventListener('hashchange', checkUrl);
 
-  // 方法二：3 秒內連點標題 5 次
   var count = 0, timer = null;
-  title.addEventListener('click', function(){
+  knob.addEventListener('click', function(){
     count++;
     clearTimeout(timer);
     timer = setTimeout(function(){ count = 0; }, 3000);
