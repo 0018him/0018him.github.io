@@ -38,12 +38,16 @@
     transition:border-color .18s ease, background .18s ease, transform .18s ease;
   }
   a.item:active{transform:scale(.985);}
+  a.item:focus-visible{outline:2px solid #1a1a1a;outline-offset:3px;}
   @media (hover:hover){
     a.item:hover{border-color:var(--line-hi);background:#fafafa;}
   }
   .hidden-group{display:none;}
   .hidden-group.on{display:block;animation:fade .35s ease;}
   @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none !important;transition:none !important;}
+  }
   #knob{
     display:block;
     width:44px;
