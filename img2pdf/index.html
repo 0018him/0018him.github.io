@@ -73,6 +73,17 @@
     border-radius:5px;overflow:hidden;border:1px solid var(--line);background:#fff;
   }
   .thumb-wrap img{width:100%;height:100%;object-fit:cover;display:block;}
+  .thumb-wrap.pending{
+    background:repeating-linear-gradient(45deg,#F6F4F0 0 6px,#EFEBE5 6px 12px);
+  }
+  .item.pending{opacity:.62;}
+
+  /* ── 排序 ── */
+  .sort-row{display:none;align-items:center;gap:10px;margin:0 0 14px;}
+  .sort-row .opt-label{
+    font-family:"IBM Plex Mono",monospace;font-size:10.5px;
+    letter-spacing:.08em;color:var(--ink-soft);width:34px;flex-shrink:0;
+  }
   .info{flex:1;min-width:0;}
   .fname{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .fsize{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-soft);margin-top:2px;}
@@ -156,6 +167,15 @@
     <button id="clearAll" style="display:none;">全部清除</button>
   </div>
 
+  <div class="sort-row" id="sortRow">
+    <span class="opt-label">排序</span>
+    <div class="seg" id="segSort">
+      <button data-v="ord">上傳次序</button>
+      <button data-v="az">檔名 A→Z</button>
+      <button data-v="za">檔名 Z→A</button>
+    </div>
+  </div>
+
   <div class="list" id="list"></div>
   <div class="empty" id="emptyMsg">未有圖片</div>
 </div>
@@ -217,7 +237,7 @@
   const dropzone = $('dropzone'), fileInput = $('fileInput'), list = $('list'),
         countEl = $('count'), emptyMsg = $('emptyMsg'), clearAllBtn = $('clearAll'),
         goBtn = $('goBtn'), pdfNameInput = $('pdfName'), statusEl = $('status'),
-        rowOrient = $('rowOrient'), rowMargin = $('rowMargin');
+        rowOrient = $('rowOrient'), rowMargin = $('rowMargin'), sortRow = $('sortRow');
 
   /* ── 設定 ── */
   const QUALITY = {
@@ -270,25 +290,57 @@
   function handleFiles(fl){
     const valid = Array.from(fl).filter(f => /^image\/(jpeg|jpg|png)$/i.test(f.type));
     if(!valid.length) return;
-    valid.forEach(readFile);
+    // 先按選取次序即刻佔位,讀取完成先填返內容,
+    // 咁樣 FileReader 邊張快邊張慢都唔會打亂次序
+    valid.forEach(file => {
+      const entry = { id: seq++, file, dataURL:null, w:0, h:0, ready:false };
+      images.push(entry);
+      readFile(entry);
+    });
+    render();
   }
 
-  function readFile(file){
+  function dropEntry(entry, msg){
+    const i = images.indexOf(entry);
+    if(i > -1) images.splice(i,1);
+    setStatus(msg + ':' + entry.file.name);
+    render();
+  }
+
+  function readFile(entry){
     const reader = new FileReader();
-    reader.onerror = () => setStatus('讀取失敗:' + file.name);
+    reader.onerror = () => dropEntry(entry, '讀取失敗');
     reader.onload = e => {
       const img = new Image();
-      img.onerror = () => setStatus('無法解碼:' + file.name);
+      img.onerror = () => dropEntry(entry, '無法解碼');
       img.onload = () => {
         // naturalWidth/Height 已經係 EXIF 修正後嘅尺寸,同 canvas 畫出嚟一致
-        images.push({ id: seq++, file, dataURL: e.target.result,
-                      w: img.naturalWidth, h: img.naturalHeight });
+        entry.dataURL = e.target.result;
+        entry.w = img.naturalWidth;
+        entry.h = img.naturalHeight;
+        entry.ready = true;
         render();
       };
       img.src = e.target.result;
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(entry.file);
   }
+
+  /* ── 排序 ── */
+  $('segSort').addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    if(!btn || images.length < 2) return;
+    const v = btn.dataset.v;
+    if(v === 'ord'){
+      images.sort((a,b) => a.id - b.id);          // id 遞增 = 上傳次序
+    }else{
+      // numeric:true 令 IMG_2 排喺 IMG_10 前面,唔會變成純字串比較
+      const coll = new Intl.Collator(['zh-Hant','en'], { numeric:true, sensitivity:'base' });
+      images.sort((a,b) => coll.compare(a.file.name, b.file.name) * (v === 'za' ? -1 : 1));
+    }
+    render();
+    clearStatus();
+  });
 
   /* ── 列表 ── */
   function fmtSize(b){
@@ -306,23 +358,28 @@
 
   function render(){
     list.innerHTML = '';
-    countEl.textContent = images.length + ' 張圖片';
+    const pending = images.filter(im => !im.ready).length;
+    countEl.textContent = images.length + ' 張圖片'
+      + (pending ? '(讀取緊 ' + pending + ' 張)' : '');
     emptyMsg.style.display = images.length ? 'none' : 'block';
     clearAllBtn.style.display = images.length ? 'inline' : 'none';
-    goBtn.disabled = images.length === 0 || busy;
+    sortRow.style.display = images.length > 1 ? 'flex' : 'none';
+    goBtn.disabled = images.length === 0 || busy || pending > 0;
 
     images.forEach((im, i) => {
       const row = document.createElement('div');
-      row.className = 'item';
+      row.className = 'item' + (im.ready ? '' : ' pending');
 
       const idx = document.createElement('div');
       idx.className = 'idx'; idx.textContent = i + 1;
 
       const tw = document.createElement('div');
-      tw.className = 'thumb-wrap';
-      const timg = document.createElement('img');
-      timg.src = im.dataURL; timg.alt = '';
-      tw.appendChild(timg);
+      tw.className = 'thumb-wrap' + (im.ready ? '' : ' pending');
+      if(im.ready){
+        const timg = document.createElement('img');
+        timg.src = im.dataURL; timg.alt = '';
+        tw.appendChild(timg);
+      }
 
       const info = document.createElement('div');
       info.className = 'info';
@@ -330,7 +387,9 @@
       fn.className = 'fname'; fn.textContent = im.file.name;
       const fs = document.createElement('div');
       fs.className = 'fsize';
-      fs.textContent = fmtSize(im.file.size) + ' · ' + im.w + '×' + im.h;
+      fs.textContent = im.ready
+        ? fmtSize(im.file.size) + ' · ' + im.w + '×' + im.h
+        : '讀取中…';
       info.append(fn, fs);
 
       const ctrls = document.createElement('div');
