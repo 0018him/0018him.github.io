@@ -72,7 +72,7 @@
     position:relative;width:50px;height:50px;flex-shrink:0;
     border-radius:5px;overflow:hidden;border:1px solid var(--line);background:#fff;
   }
-  .thumb-wrap img{width:100%;height:100%;object-fit:cover;display:block;}
+  .thumb-wrap canvas{width:100%;height:100%;display:block;}
   .thumb-wrap.pending{
     background:repeating-linear-gradient(45deg,#F6F4F0 0 6px,#EFEBE5 6px 12px);
   }
@@ -169,6 +169,66 @@
     color:var(--ink-soft);text-align:center;margin-top:8px;
   }
 
+  /* ── 選取 ── */
+  .thumb-wrap{cursor:pointer;}
+  .thumb-wrap.sel{border-color:var(--seal);box-shadow:0 0 0 2px var(--seal-soft);}
+  .thumb-wrap .tick{
+    position:absolute;inset:0;display:none;
+    align-items:center;justify-content:center;
+    background:rgba(178,58,46,.34);color:#fff;font-size:19px;font-weight:700;
+  }
+  .thumb-wrap.sel .tick{display:flex;}
+  .tag-adj{
+    display:inline-block;margin-left:6px;padding:1px 5px;
+    border:1px solid var(--seal);border-radius:3px;
+    color:var(--seal);font-size:9.5px;letter-spacing:.04em;
+  }
+
+  .sel-row{display:none;align-items:center;gap:10px;margin:0 0 14px;flex-wrap:wrap;}
+  .sel-row .opt-label{
+    font-family:"IBM Plex Mono",monospace;font-size:10.5px;
+    letter-spacing:.08em;color:var(--ink-soft);width:34px;flex-shrink:0;
+  }
+  .seg button.accent{border-color:var(--seal);color:var(--seal);font-weight:600;}
+  .seg button:disabled{opacity:.35;cursor:not-allowed;}
+
+  /* ── 調色面板 ── */
+  .sheet-bg{
+    display:none;position:fixed;inset:0;z-index:50;
+    background:rgba(28,27,26,.42);
+    align-items:flex-end;justify-content:center;
+  }
+  .sheet-bg.show{display:flex;}
+  .sheet{
+    width:100%;max-width:640px;background:var(--paper);
+    border-radius:14px 14px 0 0;padding:20px 22px calc(20px + env(safe-area-inset-bottom));
+    max-height:88vh;overflow-y:auto;
+  }
+  .sheet-title{font-size:16px;font-weight:700;margin-bottom:14px;}
+  .prev-box{
+    height:150px;border:1px solid var(--line);border-radius:8px;
+    background:#fff;display:flex;align-items:center;justify-content:center;
+    overflow:hidden;margin-bottom:16px;
+  }
+  .prev-box canvas{max-width:100%;max-height:100%;display:block;}
+
+  .sld{margin-bottom:14px;}
+  .sld-head{
+    display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px;
+  }
+  .sld-name{font-size:13px;}
+  .sld-val{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-soft);}
+  .sld input[type=range]{
+    width:100%;accent-color:var(--seal);height:26px;margin:0;
+  }
+  .sheet-acts{display:flex;gap:9px;margin-top:18px;}
+  .sheet-acts button{
+    font-family:"Noto Serif TC",serif;font-size:13.5px;font-weight:600;
+    padding:10px 8px;border-radius:6px;cursor:pointer;
+  }
+  .sheet-acts .ghost{flex:1;background:#fff;border:1px solid var(--line);color:var(--ink);}
+  .sheet-acts .solid{flex:1.4;background:var(--seal);border:none;color:#fff;}
+
   @media (prefers-reduced-motion: reduce){*{transition:none !important;}}
 </style>
 </head>
@@ -196,6 +256,15 @@
       <button data-v="ord">上傳次序</button>
       <button data-v="az">檔名 A→Z</button>
       <button data-v="za">檔名 Z→A</button>
+    </div>
+  </div>
+
+  <div class="sel-row" id="selRow">
+    <span class="opt-label">選取</span>
+    <div class="seg">
+      <button id="selAll">全選</button>
+      <button id="selNone">取消</button>
+      <button id="adjBtn" class="accent" disabled>調色</button>
     </div>
   </div>
 
@@ -265,6 +334,41 @@
   </div>
 </div>
 
+<div class="sheet-bg" id="sheetBg">
+  <div class="sheet" role="dialog" aria-modal="true" aria-label="調色">
+    <div class="sheet-title" id="sheetTitle">調色</div>
+
+    <div class="prev-box"><canvas id="prevCv"></canvas></div>
+
+    <div class="sld">
+      <div class="sld-head"><span class="sld-name">曝光</span><span class="sld-val" id="vBri">100</span></div>
+      <input type="range" id="sBri" min="40" max="180" step="1" value="100">
+    </div>
+    <div class="sld">
+      <div class="sld-head"><span class="sld-name">對比</span><span class="sld-val" id="vCon">100</span></div>
+      <input type="range" id="sCon" min="40" max="180" step="1" value="100">
+    </div>
+    <div class="sld">
+      <div class="sld-head"><span class="sld-name">飽和</span><span class="sld-val" id="vSat">100</span></div>
+      <input type="range" id="sSat" min="0" max="200" step="1" value="100">
+    </div>
+    <div class="sld">
+      <div class="sld-head"><span class="sld-name">陰影</span><span class="sld-val" id="vSh">0</span></div>
+      <input type="range" id="sSh" min="-100" max="100" step="1" value="0">
+    </div>
+    <div class="sld">
+      <div class="sld-head"><span class="sld-name">亮部</span><span class="sld-val" id="vHl">0</span></div>
+      <input type="range" id="sHl" min="-100" max="100" step="1" value="0">
+    </div>
+
+    <div class="sheet-acts">
+      <button class="ghost" id="adjReset">重設</button>
+      <button class="ghost" id="adjCancel">取消</button>
+      <button class="solid" id="adjApply">套用</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
   "use strict";
@@ -275,7 +379,82 @@
         goBtn = $('goBtn'), pdfNameInput = $('pdfName'), statusEl = $('status'),
         rowOrient = $('rowOrient'), rowMargin = $('rowMargin'), sortRow = $('sortRow'),
         editControls = $('editControls'), donePanel = $('donePanel'),
-        doneTitle = $('doneTitle'), doneMeta = $('doneMeta');
+        doneTitle = $('doneTitle'), doneMeta = $('doneMeta'),
+        selRow = $('selRow'), adjBtn = $('adjBtn'),
+        sheetBg = $('sheetBg'), sheetTitle = $('sheetTitle'), prevCv = $('prevCv');
+
+  /* ── 調色 ── */
+  const ADJ0 = { bri:100, con:100, sat:100, sh:0, hl:0 };
+  const isAdjusted = a =>
+    a.bri !== 100 || a.con !== 100 || a.sat !== 100 || a.sh !== 0 || a.hl !== 0;
+  // CSS filter 做得到嘅部分
+  const hasFilter = a => a.bri !== 100 || a.con !== 100 || a.sat !== 100;
+  const filterStr = a => hasFilter(a)
+    ? 'saturate(' + a.sat + '%) contrast(' + a.con + '%) brightness(' + a.bri + '%)'
+    : 'none';
+  // CSS filter 做唔到,一定要逐像素嘅部分
+  const hasTone = a => a.sh !== 0 || a.hl !== 0;
+
+  // 陰影/亮部色調曲線。用 gamma 型,保證單調遞增兼固定黑白端點,
+  // 唔會出現色調反轉(天空漸變會起色帶)。
+  const TONE_K = 0.9;
+  function toneLut(a){
+    const p = Math.pow(2, -(a.sh/100) * TONE_K);
+    const q = Math.pow(2,  (a.hl/100) * TONE_K);
+    const lut = new Uint8ClampedArray(256);
+    for(let i = 0; i < 256; i++){
+      let v = i/255;
+      if(a.sh !== 0) v = Math.pow(v, p);
+      if(a.hl !== 0) v = 1 - Math.pow(1 - v, q);
+      lut[i] = Math.round(v * 255);
+    }
+    return lut;
+  }
+
+  // 偵測 canvas ctx.filter 支援;舊版 Safari 冇,要行逐像素備援
+  const canFilter = (() => {
+    try{
+      const c = document.createElement('canvas').getContext('2d');
+      c.filter = 'saturate(150%)';
+      return c.filter !== 'none' && c.filter !== '';
+    }catch(e){ return false; }
+  })();
+
+  // 逐像素處理。doFilter 只喺 ctx.filter 唔支援時開,
+  // 次序同 CSS filter 一致:飽和 → 對比 → 曝光 → 陰影/亮部
+  function applyPixels(d, a, doFilter, doTone){
+    let lut = null;
+    if(doFilter){
+      const c = a.con/100, b = a.bri/100;
+      lut = new Uint8ClampedArray(256);
+      for(let i = 0; i < 256; i++){
+        lut[i] = Math.max(0, Math.min(255, ((i - 127.5) * c + 127.5) * b));
+      }
+    }
+    const tl = doTone ? toneLut(a) : null;
+    const s = a.sat/100;
+
+    for(let i = 0; i < d.length; i += 4){
+      let r = d[i], g = d[i+1], bl = d[i+2];
+      if(doFilter){
+        if(s !== 1){
+          const y = 0.2126*r + 0.7152*g + 0.0722*bl;
+          r  = y + (r  - y)*s;
+          g  = y + (g  - y)*s;
+          bl = y + (bl - y)*s;
+        }
+        r  = lut[r  < 0 ? 0 : r  > 255 ? 255 : r  | 0];
+        g  = lut[g  < 0 ? 0 : g  > 255 ? 255 : g  | 0];
+        bl = lut[bl < 0 ? 0 : bl > 255 ? 255 : bl | 0];
+      }
+      if(tl){
+        r  = tl[r  | 0];
+        g  = tl[g  | 0];
+        bl = tl[bl | 0];
+      }
+      d[i] = r; d[i+1] = g; d[i+2] = bl;
+    }
+  }
 
   /* ── 設定 ── */
   const QUALITY = {
@@ -316,6 +495,53 @@
   bindSeg('segMargin','margin');
   bindSeg('segQuality','quality');
 
+  /* ── 統一繪圖管線:縮圖、預覽、匯出都行呢條 ── */
+  function drawAdjusted(ctx, img, adj, dx, dy, dw, dh, cvW, cvH){
+    const f = filterStr(adj);
+    if(f !== 'none' && canFilter){
+      ctx.filter = f;
+      ctx.drawImage(img, dx, dy, dw, dh);
+      ctx.filter = 'none';
+    }else{
+      ctx.drawImage(img, dx, dy, dw, dh);
+    }
+    const needFallback = f !== 'none' && !canFilter;
+    const needTone = hasTone(adj);
+    if(!needFallback && !needTone) return;
+
+    // 只掃圖片佔嘅範圍,唔掃埋白邊
+    const x = Math.max(0, Math.floor(dx));
+    const y = Math.max(0, Math.floor(dy));
+    const w = Math.min(cvW - x, Math.ceil(dw + (dx - x)));
+    const h = Math.min(cvH - y, Math.ceil(dh + (dy - y)));
+    if(w <= 0 || h <= 0) return;
+    const idata = ctx.getImageData(x, y, w, h);
+    applyPixels(idata.data, adj, needFallback, needTone);
+    ctx.putImageData(idata, x, y);
+  }
+
+  // 方形裁切(縮圖用),等同 object-fit: cover
+  function paintCover(cv, img, adj, side){
+    cv.width = side; cv.height = side;
+    const c = cv.getContext('2d');
+    c.fillStyle = '#fff'; c.fillRect(0,0,side,side);
+    const s = Math.max(side/img.width, side/img.height);
+    const dw = img.width*s, dh = img.height*s;
+    drawAdjusted(c, img, adj, (side-dw)/2, (side-dh)/2, dw, dh, side, side);
+  }
+
+  // 完整顯示(預覽用),等同 object-fit: contain
+  function paintContain(cv, img, adj, maxW, maxH){
+    const s = Math.min(maxW/img.width, maxH/img.height, 1);
+    const w = Math.max(1, Math.round(img.width*s));
+    const h = Math.max(1, Math.round(img.height*s));
+    cv.width = w; cv.height = h;
+    cv.style.width = Math.round(w / (window.devicePixelRatio || 1)) + 'px';
+    const c = cv.getContext('2d');
+    c.fillStyle = '#fff'; c.fillRect(0,0,w,h);
+    drawAdjusted(c, img, adj, 0, 0, w, h, w, h);
+  }
+
   /* ── 上傳 ── */
   dropzone.addEventListener('click', () => fileInput.click());
   ['dragenter','dragover'].forEach(ev =>
@@ -331,7 +557,8 @@
     // 先按選取次序即刻佔位,讀取完成先填返內容,
     // 咁樣 FileReader 邊張快邊張慢都唔會打亂次序
     valid.forEach(file => {
-      const entry = { id: seq++, file, dataURL:null, w:0, h:0, ready:false };
+      const entry = { id: seq++, file, dataURL:null, w:0, h:0, ready:false,
+                      sel:false, adj:{ ...ADJ0 } };
       images.push(entry);
       readFile(entry);
     });
@@ -356,8 +583,23 @@
         entry.dataURL = e.target.result;
         entry.w = img.naturalWidth;
         entry.h = img.naturalHeight;
-        entry.ready = true;
-        render();
+
+        // 另存一張細版,俾縮圖同調色預覽重繪用。
+        // 唔保留原圖 Image 物件係為咗慳記憶體 —— 幾張 1200 萬像素相夠爆 iPad。
+        const PREV = 420;
+        const s = Math.min(PREV/entry.w, PREV/entry.h, 1);
+        const pw = Math.max(1, Math.round(entry.w*s));
+        const ph = Math.max(1, Math.round(entry.h*s));
+        const tc = document.createElement('canvas');
+        tc.width = pw; tc.height = ph;
+        const tcx = tc.getContext('2d');
+        tcx.fillStyle = '#fff'; tcx.fillRect(0,0,pw,ph);
+        tcx.drawImage(img, 0, 0, pw, ph);
+
+        const pi = new Image();
+        pi.onerror = () => dropEntry(entry, '預覽產生失敗');
+        pi.onload = () => { entry.prev = pi; entry.ready = true; render(); };
+        pi.src = tc.toDataURL('image/jpeg', 0.85);
       };
       img.src = e.target.result;
     };
@@ -403,6 +645,10 @@
     emptyMsg.style.display = images.length ? 'none' : 'block';
     clearAllBtn.style.display = images.length ? 'inline' : 'none';
     sortRow.style.display = images.length > 1 ? 'flex' : 'none';
+    selRow.style.display = images.length ? 'flex' : 'none';
+    const selCount = images.filter(im => im.sel).length;
+    adjBtn.disabled = selCount === 0;
+    adjBtn.textContent = selCount ? '調色 · ' + selCount : '調色';
     goBtn.disabled = images.length === 0 || busy || pending > 0;
 
     images.forEach((im, i) => {
@@ -413,11 +659,18 @@
       idx.className = 'idx'; idx.textContent = i + 1;
 
       const tw = document.createElement('div');
-      tw.className = 'thumb-wrap' + (im.ready ? '' : ' pending');
+      tw.className = 'thumb-wrap' + (im.ready ? '' : ' pending') + (im.sel ? ' sel' : '');
       if(im.ready){
-        const timg = document.createElement('img');
-        timg.src = im.dataURL; timg.alt = '';
-        tw.appendChild(timg);
+        const side = Math.round(50 * Math.min(window.devicePixelRatio || 1, 3));
+        const tcv = document.createElement('canvas');
+        paintCover(tcv, im.prev, im.adj, side);
+        tw.appendChild(tcv);
+        const tick = document.createElement('div');
+        tick.className = 'tick'; tick.textContent = '✓';
+        tw.appendChild(tick);
+        tw.setAttribute('role','button');
+        tw.setAttribute('aria-label', im.sel ? '取消選取' : '選取');
+        tw.onclick = () => { im.sel = !im.sel; render(); };
       }
 
       const info = document.createElement('div');
@@ -429,6 +682,11 @@
       fs.textContent = im.ready
         ? fmtSize(im.file.size) + ' · ' + im.w + '×' + im.h
         : '讀取中…';
+      if(im.ready && isAdjusted(im.adj)){
+        const tag = document.createElement('span');
+        tag.className = 'tag-adj'; tag.textContent = '已調色';
+        fs.appendChild(tag);
+      }
       info.append(fn, fs);
 
       const ctrls = document.createElement('div');
@@ -450,6 +708,87 @@
   }
 
   clearAllBtn.addEventListener('click', () => { images = []; render(); clearStatus(); });
+
+  /* ── 選取操作 ── */
+  $('selAll').addEventListener('click', () => {
+    const allOn = images.length && images.every(im => !im.ready || im.sel);
+    images.forEach(im => { if(im.ready) im.sel = !allOn; });
+    render();
+  });
+  $('selNone').addEventListener('click', () => {
+    images.forEach(im => im.sel = false);
+    render();
+  });
+
+  /* ── 調色面板 ── */
+  const sBri = $('sBri'), sCon = $('sCon'), sSat = $('sSat'),
+        sSh  = $('sSh'),  sHl  = $('sHl');
+  const vBri = $('vBri'), vCon = $('vCon'), vSat = $('vSat'),
+        vSh  = $('vSh'),  vHl  = $('vHl');
+  const SLD = [[sBri,vBri],[sCon,vCon],[sSat,vSat],[sSh,vSh],[sHl,vHl]];
+
+  let prevSrc = null, prevPending = false;
+
+  function sheetAdj(){
+    return { bri:+sBri.value, con:+sCon.value, sat:+sSat.value,
+             sh:+sSh.value,   hl:+sHl.value };
+  }
+  const sgn = n => (n > 0 ? '+' : '') + n;
+
+  function syncSheet(){
+    const a = sheetAdj();
+    vBri.textContent = a.bri; vCon.textContent = a.con; vSat.textContent = a.sat;
+    vSh.textContent = sgn(a.sh); vHl.textContent = sgn(a.hl);
+    if(!prevSrc || prevPending) return;
+    // rAF 節流:拖滑桿時每格重繪一次就夠,唔使每個 input 事件都畫
+    prevPending = true;
+    requestAnimationFrame(() => {
+      prevPending = false;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      paintContain(prevCv, prevSrc, sheetAdj(),
+                   Math.round(560*dpr), Math.round(150*dpr));
+    });
+  }
+  SLD.forEach(([s]) => {
+    s.addEventListener('input', syncSheet);
+    s.addEventListener('change', syncSheet);
+  });
+
+  adjBtn.addEventListener('click', () => {
+    const sel = images.filter(im => im.sel && im.ready);
+    if(!sel.length) return;
+
+    // 幾張數值一致就沿用,唔一致就由預設開始
+    const f = sel[0].adj;
+    const same = sel.every(im => Object.keys(ADJ0).every(k => im.adj[k] === f[k]));
+    const base = same ? f : ADJ0;
+    sBri.value = base.bri; sCon.value = base.con; sSat.value = base.sat;
+    sSh.value  = base.sh;  sHl.value  = base.hl;
+
+    sheetTitle.textContent = '調色 · ' + sel.length + ' 張';
+    prevSrc = sel[0].prev;
+    sheetBg.classList.add('show');
+    syncSheet();
+  });
+
+  function closeSheet(){
+    sheetBg.classList.remove('show');
+    prevSrc = null;
+    prevCv.width = prevCv.height = 1;
+  }
+  $('adjCancel').addEventListener('click', closeSheet);
+  sheetBg.addEventListener('click', e => { if(e.target === sheetBg) closeSheet(); });
+  $('adjReset').addEventListener('click', () => {
+    sBri.value = ADJ0.bri; sCon.value = ADJ0.con; sSat.value = ADJ0.sat;
+    sSh.value  = ADJ0.sh;  sHl.value  = ADJ0.hl;
+    syncSheet();
+  });
+  $('adjApply').addEventListener('click', () => {
+    const a = sheetAdj();
+    images.forEach(im => { if(im.sel && im.ready) im.adj = { ...a }; });
+    closeSheet();
+    render();
+  });
 
   function setStatus(t, ok){
     statusEl.textContent = t;
@@ -577,7 +916,8 @@
         }
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(img, plan.dx, plan.dy, plan.dw, plan.dh);
+        drawAdjusted(ctx, img, im.adj || ADJ0,
+                     plan.dx, plan.dy, plan.dw, plan.dh, plan.cvW, plan.cvH);
 
         const out = outPNG ? canvas.toDataURL('image/png')
                            : canvas.toDataURL('image/jpeg', qs.q);
