@@ -146,6 +146,29 @@
   }
   .status.ok{color:var(--seal);}
 
+  /* ── 匯出完成 ── */
+  .done{display:none;padding:2px 0 2px;}
+  .done.show{display:block;}
+  .done-title{font-size:14px;font-weight:600;margin-bottom:3px;}
+  .done-meta{
+    font-family:"IBM Plex Mono",monospace;font-size:11px;
+    color:var(--ink-soft);margin-bottom:12px;
+  }
+  .done-acts{display:flex;gap:9px;}
+  .done-acts button{
+    flex:1;font-family:"Noto Serif TC",serif;font-size:13.5px;font-weight:600;
+    padding:10px 8px;border-radius:6px;cursor:pointer;
+  }
+  .done-acts .ghost{
+    background:#fff;border:1px solid var(--line);color:var(--ink);
+  }
+  .done-acts .ghost:active{background:var(--seal-soft);border-color:var(--seal);}
+  .done-acts .solid{background:var(--seal);border:none;color:#fff;}
+  .done-hint{
+    font-family:"IBM Plex Mono",monospace;font-size:10.5px;
+    color:var(--ink-soft);text-align:center;margin-top:8px;
+  }
+
   @media (prefers-reduced-motion: reduce){*{transition:none !important;}}
 </style>
 </head>
@@ -182,6 +205,7 @@
 
 <div class="bar">
   <div class="bar-inner">
+   <div id="editControls">
 
     <div class="opt-row">
       <span class="opt-label">版面</span>
@@ -226,6 +250,18 @@
     </div>
     <div class="status" id="status"></div>
 
+   </div><!-- /editControls -->
+
+   <div class="done" id="donePanel">
+     <div class="done-title" id="doneTitle">已匯出</div>
+     <div class="done-meta" id="doneMeta"></div>
+     <div class="done-acts">
+       <button class="ghost" id="againBtn">繼續編輯</button>
+       <button class="solid" id="freshBtn">清空,開新一份</button>
+     </div>
+     <div class="done-hint">繼續編輯可加圖、改次序、換版面或畫質,再匯出一份</div>
+   </div>
+
   </div>
 </div>
 
@@ -237,7 +273,9 @@
   const dropzone = $('dropzone'), fileInput = $('fileInput'), list = $('list'),
         countEl = $('count'), emptyMsg = $('emptyMsg'), clearAllBtn = $('clearAll'),
         goBtn = $('goBtn'), pdfNameInput = $('pdfName'), statusEl = $('status'),
-        rowOrient = $('rowOrient'), rowMargin = $('rowMargin'), sortRow = $('sortRow');
+        rowOrient = $('rowOrient'), rowMargin = $('rowMargin'), sortRow = $('sortRow'),
+        editControls = $('editControls'), donePanel = $('donePanel'),
+        doneTitle = $('doneTitle'), doneMeta = $('doneMeta');
 
   /* ── 設定 ── */
   const QUALITY = {
@@ -358,6 +396,7 @@
 
   function render(){
     list.innerHTML = '';
+    exitDone();
     const pending = images.filter(im => !im.ready).length;
     countEl.textContent = images.length + ' 張圖片'
       + (pending ? '(讀取緊 ' + pending + ' 張)' : '');
@@ -417,6 +456,36 @@
     statusEl.className = 'status' + (ok ? ' ok' : '');
   }
   function clearStatus(){ setStatus(''); }
+
+  /* ── 匯出完成狀態 ── */
+  let doneMode = false;
+  function enterDone(name, before, after){
+    doneMode = true;
+    doneTitle.textContent = '已匯出 ' + name;
+    const pct = Math.round((1 - after/before) * 100);
+    const trend = after < before ? '省 ' + pct + '%' : '大 ' + Math.abs(pct) + '%';
+    doneMeta.textContent = fmtSize(before) + ' → ' + fmtSize(after) + '(' + trend + ')';
+    editControls.style.display = 'none';
+    donePanel.classList.add('show');
+  }
+  function exitDone(){
+    if(!doneMode) return;
+    doneMode = false;
+    donePanel.classList.remove('show');
+    editControls.style.display = '';
+    clearStatus();
+  }
+
+  $('againBtn').addEventListener('click', () => {
+    exitDone();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+  $('freshBtn').addEventListener('click', () => {
+    images = [];
+    exitDone();
+    render();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
 
   /* ── 尺寸運算 ── */
   function fitArea(w,h){
@@ -545,9 +614,8 @@
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 60000);
 
-      const pct = Math.round((1 - after/before) * 100);
-      const trend = after < before ? '省 ' + pct + '%' : '大 ' + Math.abs(pct) + '%';
-      setStatus(fmtSize(before) + ' → ' + fmtSize(after) + '(' + trend + ')', true);
+      clearStatus();
+      enterDone(name, before, after);
 
     }catch(err){
       console.error(err);
