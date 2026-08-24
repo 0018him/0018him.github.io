@@ -205,12 +205,34 @@
     max-height:88vh;overflow-y:auto;
   }
   .sheet-title{font-size:16px;font-weight:700;margin-bottom:14px;}
-  .prev-box{
-    height:150px;border:1px solid var(--line);border-radius:8px;
-    background:#fff;display:flex;align-items:center;justify-content:center;
-    overflow:hidden;margin-bottom:16px;
+  .prev-strip{
+    display:flex;gap:0;overflow-x:auto;overflow-y:hidden;
+    scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;
+    margin-bottom:8px;scrollbar-width:none;
   }
-  .prev-box canvas{max-width:100%;max-height:100%;display:block;}
+  .prev-strip::-webkit-scrollbar{display:none;}
+  .prev-slide{
+    flex:0 0 100%;scroll-snap-align:start;scroll-snap-stop:always;
+    height:220px;display:flex;align-items:center;justify-content:center;
+    background:#fff;border:1px solid var(--line);border-radius:8px;
+    box-sizing:border-box;overflow:hidden;
+  }
+  .prev-slide canvas{max-width:100%;max-height:100%;display:block;}
+  .prev-slide .ph{font-size:12px;color:var(--ink-soft);}
+  .prev-bar{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:16px;font-family:"IBM Plex Mono",monospace;
+    font-size:11px;color:var(--ink-soft);
+  }
+  .prev-name{
+    flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    font-family:"Noto Serif TC",serif;font-size:12px;margin-right:10px;
+  }
+  .dots{display:flex;gap:4px;justify-content:center;margin-bottom:8px;flex-wrap:wrap;}
+  .dots i{
+    width:5px;height:5px;border-radius:50%;background:var(--line);display:block;
+  }
+  .dots i.on{background:var(--seal);}
 
   .sld{margin-bottom:14px;}
   .sld-head{
@@ -338,7 +360,12 @@
   <div class="sheet" role="dialog" aria-modal="true" aria-label="調色">
     <div class="sheet-title" id="sheetTitle">調色</div>
 
-    <div class="prev-box"><canvas id="prevCv"></canvas></div>
+    <div class="prev-strip" id="prevStrip"></div>
+    <div class="dots" id="prevDots"></div>
+    <div class="prev-bar">
+      <span class="prev-name" id="prevName"></span>
+      <span id="prevIdx"></span>
+    </div>
 
     <div class="sld">
       <div class="sld-head"><span class="sld-name">曝光</span><span class="sld-val" id="vBri">100</span></div>
@@ -381,7 +408,9 @@
         editControls = $('editControls'), donePanel = $('donePanel'),
         doneTitle = $('doneTitle'), doneMeta = $('doneMeta'),
         selRow = $('selRow'), adjBtn = $('adjBtn'),
-        sheetBg = $('sheetBg'), sheetTitle = $('sheetTitle'), prevCv = $('prevCv');
+        sheetBg = $('sheetBg'), sheetTitle = $('sheetTitle'),
+        prevStrip = $('prevStrip'), prevDots = $('prevDots'),
+        prevName = $('prevName'), prevIdx = $('prevIdx');
 
   /* ── 調色 ── */
   const ADJ0 = { bri:100, con:100, sat:100, sh:0, hl:0 };
@@ -536,7 +565,6 @@
     const w = Math.max(1, Math.round(img.width*s));
     const h = Math.max(1, Math.round(img.height*s));
     cv.width = w; cv.height = h;
-    cv.style.width = Math.round(w / (window.devicePixelRatio || 1)) + 'px';
     const c = cv.getContext('2d');
     c.fillStyle = '#fff'; c.fillRect(0,0,w,h);
     drawAdjusted(c, img, adj, 0, 0, w, h, w, h);
@@ -727,7 +755,11 @@
         vSh  = $('vSh'),  vHl  = $('vHl');
   const SLD = [[sBri,vBri],[sCon,vCon],[sSat,vSat],[sSh,vSh],[sHl,vHl]];
 
-  let prevSrc = null, prevPending = false;
+  let prevItems = [];      // 目前面板入面嘅圖(即係選取咗嗰批)
+  let prevSlides = [];     // 對應嘅 canvas
+  let prevDirty = new Set();
+  let prevCur = 0;
+  let prevPending = false;
 
   function sheetAdj(){
     return { bri:+sBri.value, con:+sCon.value, sat:+sSat.value,
@@ -735,24 +767,72 @@
   }
   const sgn = n => (n > 0 ? '+' : '') + n;
 
+  function buildSlides(sel){
+    prevStrip.innerHTML = '';
+    prevDots.innerHTML = '';
+    prevItems = sel;
+    prevSlides = [];
+    prevDirty = new Set(sel.map((_, i) => i));
+    prevCur = 0;
+
+    sel.forEach(() => {
+      const slide = document.createElement('div');
+      slide.className = 'prev-slide';
+      const cv = document.createElement('canvas');
+      slide.appendChild(cv);
+      prevStrip.appendChild(slide);
+      prevSlides.push(cv);
+      const dot = document.createElement('i');
+      prevDots.appendChild(dot);
+    });
+    prevDots.style.display = sel.length > 1 ? 'flex' : 'none';
+    prevStrip.scrollLeft = 0;
+  }
+
+  // 只畫睇緊嗰張,其餘標記為待畫,滑到先算 —— 選好多張都唔會卡
+  function paintSlide(i){
+    if(i < 0 || i >= prevSlides.length || !prevDirty.has(i)) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const boxW = prevStrip.clientWidth || 320;
+    paintContain(prevSlides[i], prevItems[i].prev, sheetAdj(),
+                 Math.round(boxW*dpr), Math.round(220*dpr));
+    prevDirty.delete(i);
+  }
+
+  function updatePrevMeta(){
+    const n = prevItems.length;
+    prevIdx.textContent = n ? (prevCur+1) + ' / ' + n : '';
+    prevName.textContent = n ? prevItems[prevCur].file.name : '';
+    Array.from(prevDots.children).forEach((d,i) => d.classList.toggle('on', i === prevCur));
+  }
+
   function syncSheet(){
     const a = sheetAdj();
     vBri.textContent = a.bri; vCon.textContent = a.con; vSat.textContent = a.sat;
     vSh.textContent = sgn(a.sh); vHl.textContent = sgn(a.hl);
-    if(!prevSrc || prevPending) return;
-    // rAF 節流:拖滑桿時每格重繪一次就夠,唔使每個 input 事件都畫
+    if(!prevItems.length) return;
+    prevDirty = new Set(prevItems.map((_, i) => i));   // 全部要重畫
+    if(prevPending) return;
     prevPending = true;
-    requestAnimationFrame(() => {
+    requestAnimationFrame(() => {           // rAF 節流,拖滑桿時唔會逐個事件畫
       prevPending = false;
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      paintContain(prevCv, prevSrc, sheetAdj(),
-                   Math.round(560*dpr), Math.round(150*dpr));
+      paintSlide(prevCur);
     });
   }
   SLD.forEach(([s]) => {
     s.addEventListener('input', syncSheet);
     s.addEventListener('change', syncSheet);
   });
+
+  let scrollTimer = null;
+  prevStrip.addEventListener('scroll', () => {
+    const w = prevStrip.clientWidth || 1;
+    const i = Math.max(0, Math.min(prevItems.length - 1,
+                Math.round(prevStrip.scrollLeft / w)));
+    if(i !== prevCur){ prevCur = i; updatePrevMeta(); }
+    clearTimeout(scrollTimer);
+    scrollTimer = setTimeout(() => paintSlide(prevCur), 80);
+  }, { passive:true });
 
   adjBtn.addEventListener('click', () => {
     const sel = images.filter(im => im.sel && im.ready);
@@ -766,15 +846,19 @@
     sSh.value  = base.sh;  sHl.value  = base.hl;
 
     sheetTitle.textContent = '調色 · ' + sel.length + ' 張';
-    prevSrc = sel[0].prev;
     sheetBg.classList.add('show');
+    buildSlides(sel);                 // 要喺 show 之後,先量到 clientWidth
+    updatePrevMeta();
     syncSheet();
+    paintSlide(0);
   });
 
   function closeSheet(){
     sheetBg.classList.remove('show');
-    prevSrc = null;
-    prevCv.width = prevCv.height = 1;
+    prevSlides.forEach(cv => { cv.width = cv.height = 1; });   // 放返記憶體
+    prevStrip.innerHTML = '';
+    prevDots.innerHTML = '';
+    prevItems = []; prevSlides = []; prevDirty.clear();
   }
   $('adjCancel').addEventListener('click', closeSheet);
   sheetBg.addEventListener('click', e => { if(e.target === sheetBg) closeSheet(); });
