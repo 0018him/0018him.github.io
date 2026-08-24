@@ -184,6 +184,19 @@
     color:var(--seal);font-size:9.5px;letter-spacing:.04em;
   }
 
+  .chk{
+    width:23px;height:23px;flex-shrink:0;border:1.5px solid var(--line);
+    border-radius:50%;background:#fff;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    font-size:12px;line-height:1;color:transparent;padding:0;
+  }
+  .chk.on{background:var(--seal);border-color:var(--seal);color:#fff;}
+  .rot-badge{
+    display:inline-block;margin-left:6px;padding:1px 5px;
+    border:1px solid var(--ink-soft);border-radius:3px;
+    color:var(--ink-soft);font-size:9.5px;letter-spacing:.04em;
+  }
+
   .sel-row{display:none;align-items:center;gap:10px;margin:0 0 14px;flex-wrap:wrap;}
   .sel-row .opt-label{
     font-family:"IBM Plex Mono",monospace;font-size:10.5px;
@@ -251,6 +264,20 @@
   .sheet-acts .ghost{flex:1;background:#fff;border:1px solid var(--line);color:var(--ink);}
   .sheet-acts .solid{flex:1.4;background:var(--seal);border:none;color:#fff;}
 
+  .zoom-bg{
+    display:none;position:fixed;inset:0;z-index:70;
+    background:rgba(28,27,26,.94);
+    align-items:center;justify-content:center;flex-direction:column;
+    padding:16px;
+  }
+  .zoom-bg.show{display:flex;}
+  .zoom-bg canvas{max-width:100%;max-height:calc(100% - 40px);display:block;}
+  .zoom-tip{
+    font-family:"IBM Plex Mono",monospace;font-size:11px;
+    color:rgba(253,253,251,.72);margin-top:12px;text-align:center;
+  }
+  .prev-slide{cursor:zoom-in;}
+
   @media (prefers-reduced-motion: reduce){*{transition:none !important;}}
 </style>
 </head>
@@ -286,6 +313,8 @@
     <div class="seg">
       <button id="selAll">全選</button>
       <button id="selNone">取消</button>
+      <button id="rotL" disabled>↺ 左轉</button>
+      <button id="rotR" disabled>↻ 右轉</button>
       <button id="adjBtn" class="accent" disabled>調色</button>
     </div>
   </div>
@@ -302,7 +331,10 @@
       <span class="opt-label">版面</span>
       <div class="seg" id="segLayout">
         <button data-v="native" class="on">原生</button>
+        <button data-v="a3">A3</button>
         <button data-v="a4">A4</button>
+        <button data-v="a5">A5</button>
+        <button data-v="b4">B4</button>
         <button data-v="b5">B5</button>
       </div>
     </div>
@@ -354,6 +386,11 @@
    </div>
 
   </div>
+</div>
+
+<div class="zoom-bg" id="zoomBg">
+  <canvas id="zoomCv"></canvas>
+  <div class="zoom-tip" id="zoomTip">載入中…</div>
 </div>
 
 <div class="sheet-bg" id="sheetBg">
@@ -440,12 +477,21 @@
     return lut;
   }
 
-  // 偵測 canvas ctx.filter 支援;舊版 Safari 冇,要行逐像素備援
+  // 偵測 ctx.filter 支援。唔可以淨係讀屬性值 —— 舊版 Safari 根本冇呢個屬性,
+  // 讀返 undefined,而 undefined !== 'none' 會令人誤判為「支援」。
+  // 所以實測:填黑再套 invert(100%),睇下係咪真係變白。
   const canFilter = (() => {
     try{
-      const c = document.createElement('canvas').getContext('2d');
-      c.filter = 'saturate(150%)';
-      return c.filter !== 'none' && c.filter !== '';
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = 1;
+      const c = cv.getContext('2d');
+      if(typeof c.filter !== 'string') return false;
+      c.filter = 'invert(100%)';
+      if(c.filter === 'none' || c.filter === '') return false;
+      c.fillStyle = '#000';
+      c.fillRect(0, 0, 1, 1);
+      const d = c.getImageData(0, 0, 1, 1).data;
+      return d[0] > 200 && d[1] > 200 && d[2] > 200;
     }catch(e){ return false; }
   })();
 
@@ -492,8 +538,11 @@
     normal:   { cap:1600, q:0.75 },
     compact:  { cap:1200, q:0.60 }
   };
-  // 96 dpi 下嘅頁面像素(直向 短邊×長邊)
-  const PAGE = { a4:[794,1123], b5:[665,945] };
+  // 96 dpi 下嘅頁面像素(直向:短邊 × 長邊)
+  const PAGE = {
+    a3:[1123,1587], a4:[794,1123], a5:[559,794],
+    b4:[945,1334],  b5:[665,945]
+  };
   const MARGIN = { none:0, sm:0.04, lg:0.10 };
   const AREA_CAP = 16000000;   // iOS Safari canvas 面積上限保險位
   const EDGE_CAP = 5000;
@@ -525,14 +574,30 @@
   bindSeg('segQuality','quality');
 
   /* ── 統一繪圖管線:縮圖、預覽、匯出都行呢條 ── */
-  function drawAdjusted(ctx, img, adj, dx, dy, dw, dh, cvW, cvH){
+  // 旋轉後嘅有效尺寸(90/270 度時長闊對調)
+  const effW = (w,h,rot) => (rot % 180 ? h : w);
+  const effH = (w,h,rot) => (rot % 180 ? w : h);
+
+  function drawRot(ctx, img, rot, dx, dy, dw, dh){
+    if(!rot){ ctx.drawImage(img, dx, dy, dw, dh); return; }
+    ctx.save();
+    ctx.translate(dx + dw/2, dy + dh/2);
+    ctx.rotate(rot * Math.PI / 180);
+    // 轉之前,原圖要畫入一個長闊對調嘅框
+    const rw = (rot % 180) ? dh : dw;
+    const rh = (rot % 180) ? dw : dh;
+    ctx.drawImage(img, -rw/2, -rh/2, rw, rh);
+    ctx.restore();
+  }
+
+  function drawAdjusted(ctx, img, adj, rot, dx, dy, dw, dh, cvW, cvH){
     const f = filterStr(adj);
     if(f !== 'none' && canFilter){
       ctx.filter = f;
-      ctx.drawImage(img, dx, dy, dw, dh);
+      drawRot(ctx, img, rot, dx, dy, dw, dh);
       ctx.filter = 'none';
     }else{
-      ctx.drawImage(img, dx, dy, dw, dh);
+      drawRot(ctx, img, rot, dx, dy, dw, dh);
     }
     const needFallback = f !== 'none' && !canFilter;
     const needTone = hasTone(adj);
@@ -550,24 +615,26 @@
   }
 
   // 方形裁切(縮圖用),等同 object-fit: cover
-  function paintCover(cv, img, adj, side){
+  function paintCover(cv, img, adj, rot, side){
     cv.width = side; cv.height = side;
     const c = cv.getContext('2d');
     c.fillStyle = '#fff'; c.fillRect(0,0,side,side);
-    const s = Math.max(side/img.width, side/img.height);
-    const dw = img.width*s, dh = img.height*s;
-    drawAdjusted(c, img, adj, (side-dw)/2, (side-dh)/2, dw, dh, side, side);
+    const ew = effW(img.width, img.height, rot), eh = effH(img.width, img.height, rot);
+    const s = Math.max(side/ew, side/eh);
+    const dw = ew*s, dh = eh*s;
+    drawAdjusted(c, img, adj, rot, (side-dw)/2, (side-dh)/2, dw, dh, side, side);
   }
 
   // 完整顯示(預覽用),等同 object-fit: contain
-  function paintContain(cv, img, adj, maxW, maxH){
-    const s = Math.min(maxW/img.width, maxH/img.height, 1);
-    const w = Math.max(1, Math.round(img.width*s));
-    const h = Math.max(1, Math.round(img.height*s));
+  function paintContain(cv, img, adj, rot, maxW, maxH){
+    const ew = effW(img.width, img.height, rot), eh = effH(img.width, img.height, rot);
+    const s = Math.min(maxW/ew, maxH/eh, 1);
+    const w = Math.max(1, Math.round(ew*s));
+    const h = Math.max(1, Math.round(eh*s));
     cv.width = w; cv.height = h;
     const c = cv.getContext('2d');
     c.fillStyle = '#fff'; c.fillRect(0,0,w,h);
-    drawAdjusted(c, img, adj, 0, 0, w, h, w, h);
+    drawAdjusted(c, img, adj, rot, 0, 0, w, h, w, h);
   }
 
   /* ── 上傳 ── */
@@ -586,7 +653,7 @@
     // 咁樣 FileReader 邊張快邊張慢都唔會打亂次序
     valid.forEach(file => {
       const entry = { id: seq++, file, dataURL:null, w:0, h:0, ready:false,
-                      sel:false, adj:{ ...ADJ0 } };
+                      sel:false, rot:0, adj:{ ...ADJ0 } };
       images.push(entry);
       readFile(entry);
     });
@@ -677,11 +744,20 @@
     const selCount = images.filter(im => im.sel).length;
     adjBtn.disabled = selCount === 0;
     adjBtn.textContent = selCount ? '調色 · ' + selCount : '調色';
+    $('rotL').disabled = selCount === 0;
+    $('rotR').disabled = selCount === 0;
     goBtn.disabled = images.length === 0 || busy || pending > 0;
 
     images.forEach((im, i) => {
       const row = document.createElement('div');
       row.className = 'item' + (im.ready ? '' : ' pending');
+
+      const chk = document.createElement('button');
+      chk.className = 'chk' + (im.sel ? ' on' : '');
+      chk.textContent = '✓';
+      chk.disabled = !im.ready;
+      chk.setAttribute('aria-label', im.sel ? '取消選取' : '選取');
+      chk.onclick = () => { im.sel = !im.sel; render(); };
 
       const idx = document.createElement('div');
       idx.className = 'idx'; idx.textContent = i + 1;
@@ -691,7 +767,7 @@
       if(im.ready){
         const side = Math.round(50 * Math.min(window.devicePixelRatio || 1, 3));
         const tcv = document.createElement('canvas');
-        paintCover(tcv, im.prev, im.adj, side);
+        paintCover(tcv, im.prev, im.adj, im.rot, side);
         tw.appendChild(tcv);
         const tick = document.createElement('div');
         tick.className = 'tick'; tick.textContent = '✓';
@@ -715,6 +791,11 @@
         tag.className = 'tag-adj'; tag.textContent = '已調色';
         fs.appendChild(tag);
       }
+      if(im.ready && im.rot){
+        const rb = document.createElement('span');
+        rb.className = 'rot-badge'; rb.textContent = im.rot + '°';
+        fs.appendChild(rb);
+      }
       info.append(fn, fs);
 
       const ctrls = document.createElement('div');
@@ -730,7 +811,7 @@
       del.setAttribute('aria-label','移除'); del.onclick = () => remove(i);
       ctrls.append(up, dn, del);
 
-      row.append(idx, tw, info, ctrls);
+      row.append(chk, idx, tw, info, ctrls);
       list.appendChild(row);
     });
   }
@@ -747,6 +828,15 @@
     images.forEach(im => im.sel = false);
     render();
   });
+  function rotate(deg){
+    let n = 0;
+    images.forEach(im => {
+      if(im.sel && im.ready){ im.rot = (im.rot + deg + 360) % 360; n++; }
+    });
+    if(n) render();
+  }
+  $('rotL').addEventListener('click', () => rotate(-90));
+  $('rotR').addEventListener('click', () => rotate(90));
 
   /* ── 調色面板 ── */
   const sBri = $('sBri'), sCon = $('sCon'), sSat = $('sSat'),
@@ -767,6 +857,45 @@
   }
   const sgn = n => (n > 0 ? '+' : '') + n;
 
+  /* ── 放大檢視:由原圖重新解碼,睇真啲調色效果 ── */
+  const zoomBg = $('zoomBg'), zoomCv = $('zoomCv'), zoomTip = $('zoomTip');
+  let zoomBusy = false;
+
+  function closeZoom(){
+    zoomBg.classList.remove('show');
+    zoomCv.width = zoomCv.height = 1;   // 大圖用完即放
+  }
+  zoomBg.addEventListener('click', closeZoom);
+
+  function openZoom(i){
+    if(zoomBusy || i < 0 || i >= prevItems.length) return;
+    const im = prevItems[i];
+    zoomBusy = true;
+    zoomTip.textContent = '載入原圖…';
+    zoomBg.classList.add('show');
+
+    const big = new Image();
+    big.onerror = () => {
+      zoomTip.textContent = '載入失敗,撳任何位置關閉';
+      zoomBusy = false;
+    };
+    big.onload = () => {
+      try{
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const maxW = Math.round((window.innerWidth  - 32) * dpr);
+        const maxH = Math.round((window.innerHeight - 80) * dpr);
+        paintContain(zoomCv, big, sheetAdj(), im.rot, maxW, maxH);
+        zoomTip.textContent = im.file.name + ' · ' +
+          effW(im.w, im.h, im.rot) + '×' + effH(im.w, im.h, im.rot) + ' · 撳一下關閉';
+      }catch(err){
+        console.error(err);
+        zoomTip.textContent = '無法顯示:' + (err.message || '未知問題');
+      }
+      zoomBusy = false;
+    };
+    big.src = im.dataURL;
+  }
+
   function buildSlides(sel){
     prevStrip.innerHTML = '';
     prevDots.innerHTML = '';
@@ -780,6 +909,8 @@
       slide.className = 'prev-slide';
       const cv = document.createElement('canvas');
       slide.appendChild(cv);
+      const at = prevSlides.length;
+      slide.addEventListener('click', () => openZoom(at));
       prevStrip.appendChild(slide);
       prevSlides.push(cv);
       const dot = document.createElement('i');
@@ -794,7 +925,7 @@
     if(i < 0 || i >= prevSlides.length || !prevDirty.has(i)) return;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const boxW = prevStrip.clientWidth || 320;
-    paintContain(prevSlides[i], prevItems[i].prev, sheetAdj(),
+    paintContain(prevSlides[i], prevItems[i].prev, sheetAdj(), prevItems[i].rot,
                  Math.round(boxW*dpr), Math.round(220*dpr));
     prevDirty.delete(i);
   }
@@ -854,6 +985,7 @@
   });
 
   function closeSheet(){
+    closeZoom();
     sheetBg.classList.remove('show');
     prevSlides.forEach(cv => { cv.width = cv.height = 1; });   // 放返記憶體
     prevStrip.innerHTML = '';
@@ -982,7 +1114,9 @@
         setStatus('處理緊 ' + (i+1) + ' / ' + images.length + '…');
         await nextFrame();
 
-        const plan = cfg.layout === 'native' ? planNative(im, qs) : planPage(im, qs);
+        // 用旋轉後嘅有效尺寸嚟計版面,轉咗嘅直相先會真係變橫向頁
+        const eim = { w: effW(im.w, im.h, im.rot), h: effH(im.w, im.h, im.rot) };
+        const plan = cfg.layout === 'native' ? planNative(eim, qs) : planPage(eim, qs);
         const img = await loadImg(im.dataURL);
 
         canvas.width = plan.cvW;
@@ -1000,7 +1134,7 @@
         }
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
-        drawAdjusted(ctx, img, im.adj || ADJ0,
+        drawAdjusted(ctx, img, im.adj || ADJ0, im.rot,
                      plan.dx, plan.dy, plan.dw, plan.dh, plan.cvW, plan.cvH);
 
         const out = outPNG ? canvas.toDataURL('image/png')
