@@ -17,231 +17,125 @@
     --seal-soft:#F4E3E0;
   }
   *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
   body{
-    margin:0;
     background:var(--paper);
     color:var(--ink);
     font-family:"Noto Serif TC", serif;
     -webkit-tap-highlight-color:transparent;
   }
-  .wrap{
-    max-width:640px;
-    margin:0 auto;
-    padding:48px 24px 120px;
-  }
+  .wrap{max-width:640px;margin:0 auto;padding:44px 22px 240px;}
+
   .eyebrow{
     font-family:"IBM Plex Mono", monospace;
-    font-size:11px;
-    letter-spacing:0.14em;
-    color:var(--ink-soft);
-    text-transform:uppercase;
-    margin-bottom:10px;
+    font-size:11px;letter-spacing:.14em;
+    color:var(--ink-soft);text-transform:uppercase;margin-bottom:10px;
   }
-  h1{
-    font-size:28px;
-    font-weight:700;
-    margin:0 0 8px;
-    letter-spacing:0.02em;
-  }
-  .sub{
-    font-size:14px;
-    color:var(--ink-soft);
-    line-height:1.7;
-    margin:0 0 36px;
-  }
+  h1{font-size:27px;font-weight:700;margin:0 0 8px;letter-spacing:.02em;}
+  .sub{font-size:13.5px;color:var(--ink-soft);line-height:1.75;margin:0 0 32px;}
 
-  /* 上傳區 */
+  /* ── 上傳區 ── */
   .dropzone{
-    border:1.5px dashed var(--line);
-    border-radius:10px;
-    padding:36px 20px;
-    text-align:center;
-    cursor:pointer;
-    transition:border-color .15s ease, background .15s ease;
+    border:1.5px dashed var(--line);border-radius:10px;
+    padding:34px 20px;text-align:center;cursor:pointer;
+    transition:border-color .15s, background .15s;
   }
-  .dropzone.drag{
-    border-color:var(--seal);
-    background:var(--seal-soft);
-  }
-  .dropzone .icon{
-    font-size:22px;
-    margin-bottom:8px;
-    color:var(--ink-soft);
-  }
-  .dropzone .txt{
-    font-size:14px;
-    color:var(--ink-soft);
-  }
-  .dropzone .txt b{
-    color:var(--ink);
-    font-weight:600;
-  }
-  input[type=file]{ display:none; }
+  .dropzone.drag{border-color:var(--seal);background:var(--seal-soft);}
+  .dropzone .icon{font-size:21px;margin-bottom:8px;color:var(--ink-soft);}
+  .dropzone .txt{font-size:13.5px;color:var(--ink-soft);}
+  .dropzone .txt b{color:var(--ink);font-weight:600;}
+  input[type=file]{display:none;}
 
-  /* 計數 */
+  /* ── 計數列 ── */
   .meta-row{
-    display:flex;
-    justify-content:space-between;
-    align-items:baseline;
-    margin:28px 0 12px;
-    font-family:"IBM Plex Mono", monospace;
-    font-size:12px;
-    color:var(--ink-soft);
+    display:flex;justify-content:space-between;align-items:baseline;
+    margin:26px 0 12px;font-family:"IBM Plex Mono",monospace;
+    font-size:12px;color:var(--ink-soft);
   }
   .meta-row button{
-    font-family:"IBM Plex Mono", monospace;
-    font-size:12px;
-    color:var(--ink-soft);
-    background:none;
-    border:none;
-    cursor:pointer;
-    text-decoration:underline;
-    text-underline-offset:3px;
-    padding:0;
+    font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-soft);
+    background:none;border:none;cursor:pointer;padding:0;
+    text-decoration:underline;text-underline-offset:3px;
   }
 
-  /* 縮圖列表 */
-  .list{
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-  }
+  /* ── 圖片列表 ── */
+  .list{display:flex;flex-direction:column;gap:9px;}
   .item{
-    display:flex;
-    align-items:center;
-    gap:12px;
-    padding:10px;
-    border:1px solid var(--line);
-    border-radius:8px;
-    background:#fff;
+    display:flex;align-items:center;gap:11px;padding:9px;
+    border:1px solid var(--line);border-radius:8px;background:#fff;
   }
   .idx{
-    font-family:"IBM Plex Mono", monospace;
-    font-size:11px;
-    color:var(--ink-soft);
-    width:18px;
-    flex-shrink:0;
-    text-align:right;
+    font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-soft);
+    width:17px;flex-shrink:0;text-align:right;
   }
   .thumb-wrap{
-    position:relative;
-    width:52px;
-    height:52px;
-    flex-shrink:0;
-    border-radius:5px;
-    overflow:hidden;
-    border:1px solid var(--line);
+    position:relative;width:50px;height:50px;flex-shrink:0;
+    border-radius:5px;overflow:hidden;border:1px solid var(--line);background:#fff;
   }
-  .thumb-wrap img{
-    width:100%;
-    height:100%;
-    object-fit:cover;
-    display:block;
-  }
-  .thumb-wrap::after{
-    content:"";
-    position:absolute;
-    top:0; right:0;
-    width:12px; height:12px;
-    background:linear-gradient(135deg, transparent 50%, rgba(0,0,0,0.08) 50%);
-  }
-  .info{
-    flex:1;
-    min-width:0;
-  }
-  .fname{
-    font-size:13px;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-  }
-  .fsize{
-    font-family:"IBM Plex Mono", monospace;
-    font-size:11px;
-    color:var(--ink-soft);
-    margin-top:2px;
-  }
-  .ctrls{
-    display:flex;
-    gap:4px;
-    flex-shrink:0;
-  }
+  .thumb-wrap img{width:100%;height:100%;object-fit:cover;display:block;}
+  .info{flex:1;min-width:0;}
+  .fname{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .fsize{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-soft);margin-top:2px;}
+  .ctrls{display:flex;gap:4px;flex-shrink:0;}
   .ctrls button{
-    width:28px;
-    height:28px;
-    border:1px solid var(--line);
-    background:#fff;
-    border-radius:5px;
-    color:var(--ink-soft);
-    font-size:13px;
-    cursor:pointer;
-    display:flex;
-    align-items:center;
-    justify-content:center;
+    width:27px;height:27px;border:1px solid var(--line);background:#fff;
+    border-radius:5px;color:var(--ink-soft);font-size:13px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
   }
-  .ctrls button:active{ background:var(--seal-soft); border-color:var(--seal); }
-  .ctrls button.del{ color:var(--seal); }
-  .ctrls button:disabled{ opacity:0.3; }
+  .ctrls button:active{background:var(--seal-soft);border-color:var(--seal);}
+  .ctrls button.del{color:var(--seal);}
+  .ctrls button:disabled{opacity:.28;}
+  .empty{text-align:center;font-size:13px;color:var(--ink-soft);padding:22px 0;}
 
-  .empty{
-    text-align:center;
-    font-size:13px;
-    color:var(--ink-soft);
-    padding:24px 0;
-  }
-
-  /* 底部操作列 */
+  /* ── 底部控制 ── */
   .bar{
-    position:fixed;
-    left:0; right:0; bottom:0;
-    background:var(--paper);
+    position:fixed;left:0;right:0;bottom:0;background:var(--paper);
     border-top:1px solid var(--line);
-    padding:14px 24px calc(14px + env(safe-area-inset-bottom));
+    padding:12px 22px calc(12px + env(safe-area-inset-bottom));
   }
-  .bar-inner{
-    max-width:640px;
-    margin:0 auto;
-    display:flex;
-    align-items:center;
-    gap:12px;
+  .bar-inner{max-width:640px;margin:0 auto;}
+
+  .opt-row{
+    display:flex;align-items:center;gap:10px;margin-bottom:8px;
   }
+  .opt-label{
+    font-family:"IBM Plex Mono",monospace;font-size:10.5px;
+    letter-spacing:.08em;color:var(--ink-soft);
+    width:34px;flex-shrink:0;
+  }
+  .seg{display:flex;gap:4px;flex-wrap:wrap;}
+  .seg button{
+    font-family:"Noto Serif TC",serif;font-size:12px;
+    padding:5px 11px;border:1px solid var(--line);background:#fff;
+    color:var(--ink-soft);border-radius:5px;cursor:pointer;
+  }
+  .seg button.on{
+    border-color:var(--seal);background:var(--seal-soft);
+    color:var(--seal);font-weight:600;
+  }
+  #rowOrient,#rowMargin{display:none;}
+
+  .go-row{display:flex;align-items:center;gap:10px;margin-top:10px;}
   .fname-input{
-    flex:1;
-    font-family:"IBM Plex Mono", monospace;
-    font-size:12px;
-    padding:10px 12px;
-    border:1px solid var(--line);
-    border-radius:6px;
-    background:#fff;
-    color:var(--ink);
-    min-width:0;
+    flex:1;font-family:"IBM Plex Mono",monospace;font-size:12px;
+    padding:9px 11px;border:1px solid var(--line);border-radius:6px;
+    background:#fff;color:var(--ink);min-width:0;
   }
-  .fname-input:focus{ outline:none; border-color:var(--seal); }
+  .fname-input:focus{outline:none;border-color:var(--seal);}
   .go{
-    font-family:"Noto Serif TC", serif;
-    font-size:14px;
-    font-weight:600;
-    padding:10px 20px;
-    background:var(--seal);
-    color:#fff;
-    border:none;
-    border-radius:6px;
-    cursor:pointer;
-    white-space:nowrap;
-    flex-shrink:0;
+    font-family:"Noto Serif TC",serif;font-size:14px;font-weight:600;
+    padding:9px 19px;background:var(--seal);color:#fff;border:none;
+    border-radius:6px;cursor:pointer;white-space:nowrap;flex-shrink:0;
   }
-  .go:disabled{ background:var(--line); color:var(--ink-soft); cursor:not-allowed; }
-  .go.loading{ opacity:0.7; }
+  .go:disabled{background:var(--line);color:var(--ink-soft);cursor:not-allowed;}
 
   .status{
-    font-family:"IBM Plex Mono", monospace;
-    font-size:11px;
-    color:var(--ink-soft);
-    text-align:center;
-    margin-top:8px;
-    min-height:14px;
+    font-family:"IBM Plex Mono",monospace;font-size:11px;
+    color:var(--ink-soft);text-align:center;margin-top:7px;min-height:14px;
   }
-  .status.ok{ color:var(--seal); }
+  .status.ok{color:var(--seal);}
+
+  @media (prefers-reduced-motion: reduce){*{transition:none !important;}}
 </style>
 </head>
 <body>
@@ -249,7 +143,7 @@
 <div class="wrap">
   <div class="eyebrow">工具 / img → pdf</div>
   <h1>合成 PDF</h1>
-  <p class="sub">上傳多張 JPG / PNG,調整順序後,合成做一份 PDF。全部喺瀏覽器入面處理,唔會上傳去任何伺服器。</p>
+  <p class="sub">上傳多張 JPG / PNG,排好次序,合成一份 PDF。全部喺瀏覽器入面處理,唔會上傳去任何伺服器。</p>
 
   <div class="dropzone" id="dropzone">
     <div class="icon">＋</div>
@@ -268,69 +162,127 @@
 
 <div class="bar">
   <div class="bar-inner">
-    <input type="text" class="fname-input" id="pdfName" placeholder="檔案名稱" value="合成文件">
-    <button class="go" id="goBtn" disabled>產生 PDF</button>
+
+    <div class="opt-row">
+      <span class="opt-label">版面</span>
+      <div class="seg" id="segLayout">
+        <button data-v="native" class="on">原生</button>
+        <button data-v="a4">A4</button>
+        <button data-v="b5">B5</button>
+      </div>
+    </div>
+
+    <div class="opt-row" id="rowOrient">
+      <span class="opt-label">方向</span>
+      <div class="seg" id="segOrient">
+        <button data-v="auto" class="on">自動</button>
+        <button data-v="p">直向</button>
+        <button data-v="l">橫向</button>
+      </div>
+    </div>
+
+    <div class="opt-row" id="rowMargin">
+      <span class="opt-label">留白</span>
+      <div class="seg" id="segMargin">
+        <button data-v="none">無</button>
+        <button data-v="sm" class="on">細邊</button>
+        <button data-v="lg">闊邊</button>
+      </div>
+    </div>
+
+    <div class="opt-row">
+      <span class="opt-label">畫質</span>
+      <div class="seg" id="segQuality">
+        <button data-v="original">原始</button>
+        <button data-v="high">高清</button>
+        <button data-v="normal" class="on">一般</button>
+        <button data-v="compact">精簡</button>
+      </div>
+    </div>
+
+    <div class="go-row">
+      <input type="text" class="fname-input" id="pdfName" placeholder="檔案名稱" value="合成文件">
+      <button class="go" id="goBtn" disabled>產生 PDF</button>
+    </div>
+    <div class="status" id="status"></div>
+
   </div>
-  <div class="status" id="status"></div>
 </div>
 
 <script>
 (function(){
-  const dropzone = document.getElementById('dropzone');
-  const fileInput = document.getElementById('fileInput');
-  const list = document.getElementById('list');
-  const countEl = document.getElementById('count');
-  const emptyMsg = document.getElementById('emptyMsg');
-  const clearAllBtn = document.getElementById('clearAll');
-  const goBtn = document.getElementById('goBtn');
-  const pdfNameInput = document.getElementById('pdfName');
-  const statusEl = document.getElementById('status');
+  "use strict";
 
-  let images = []; // {id, file, dataURL, w, h}
+  const $ = id => document.getElementById(id);
+  const dropzone = $('dropzone'), fileInput = $('fileInput'), list = $('list'),
+        countEl = $('count'), emptyMsg = $('emptyMsg'), clearAllBtn = $('clearAll'),
+        goBtn = $('goBtn'), pdfNameInput = $('pdfName'), statusEl = $('status'),
+        rowOrient = $('rowOrient'), rowMargin = $('rowMargin');
+
+  /* ── 設定 ── */
+  const QUALITY = {
+    original: { cap:null, q:0.95 },
+    high:     { cap:2000, q:0.85 },
+    normal:   { cap:1600, q:0.75 },
+    compact:  { cap:1200, q:0.60 }
+  };
+  // 96 dpi 下嘅頁面像素(直向 短邊×長邊)
+  const PAGE = { a4:[794,1123], b5:[665,945] };
+  const MARGIN = { none:0, sm:0.04, lg:0.10 };
+  const AREA_CAP = 16000000;   // iOS Safari canvas 面積上限保險位
+  const EDGE_CAP = 5000;
+
+  const cfg = { layout:'native', orient:'auto', margin:'sm', quality:'normal' };
+
+  let images = [];   // {id, file, dataURL, w, h}
   let seq = 0;
+  let busy = false;
 
+  /* ── segmented control ── */
+  function bindSeg(elId, key, after){
+    $(elId).addEventListener('click', e => {
+      const btn = e.target.closest('button');
+      if(!btn) return;
+      cfg[key] = btn.dataset.v;
+      $(elId).querySelectorAll('button').forEach(b => b.classList.toggle('on', b === btn));
+      if(after) after();
+      clearStatus();
+    });
+  }
+  bindSeg('segLayout','layout', () => {
+    const on = cfg.layout !== 'native';
+    rowOrient.style.display = on ? 'flex' : 'none';
+    rowMargin.style.display = on ? 'flex' : 'none';
+  });
+  bindSeg('segOrient','orient');
+  bindSeg('segMargin','margin');
+  bindSeg('segQuality','quality');
+
+  /* ── 上傳 ── */
   dropzone.addEventListener('click', () => fileInput.click());
+  ['dragenter','dragover'].forEach(ev =>
+    dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.add('drag'); }));
+  ['dragleave','drop'].forEach(ev =>
+    dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.remove('drag'); }));
+  dropzone.addEventListener('drop', e => handleFiles(e.dataTransfer.files));
+  fileInput.addEventListener('change', e => { handleFiles(e.target.files); fileInput.value = ''; });
 
-  ['dragenter','dragover'].forEach(ev => {
-    dropzone.addEventListener(ev, e => {
-      e.preventDefault();
-      dropzone.classList.add('drag');
-    });
-  });
-  ['dragleave','drop'].forEach(ev => {
-    dropzone.addEventListener(ev, e => {
-      e.preventDefault();
-      dropzone.classList.remove('drag');
-    });
-  });
-  dropzone.addEventListener('drop', e => {
-    handleFiles(e.dataTransfer.files);
-  });
-
-  fileInput.addEventListener('change', e => {
-    handleFiles(e.target.files);
-    fileInput.value = '';
-  });
-
-  function handleFiles(fileList){
-    const valid = Array.from(fileList).filter(f =>
-      /^image\/(jpeg|jpg|png)$/.test(f.type)
-    );
+  function handleFiles(fl){
+    const valid = Array.from(fl).filter(f => /^image\/(jpeg|jpg|png)$/i.test(f.type));
+    if(!valid.length) return;
     valid.forEach(readFile);
   }
 
   function readFile(file){
     const reader = new FileReader();
+    reader.onerror = () => setStatus('讀取失敗:' + file.name);
     reader.onload = e => {
       const img = new Image();
+      img.onerror = () => setStatus('無法解碼:' + file.name);
       img.onload = () => {
-        images.push({
-          id: seq++,
-          file,
-          dataURL: e.target.result,
-          w: img.naturalWidth,
-          h: img.naturalHeight
-        });
+        // naturalWidth/Height 已經係 EXIF 修正後嘅尺寸,同 canvas 畫出嚟一致
+        images.push({ id: seq++, file, dataURL: e.target.result,
+                      w: img.naturalWidth, h: img.naturalHeight });
         render();
       };
       img.src = e.target.result;
@@ -338,98 +290,212 @@
     reader.readAsDataURL(file);
   }
 
-  function fmtSize(bytes){
-    if(bytes < 1024) return bytes + ' B';
-    if(bytes < 1024*1024) return (bytes/1024).toFixed(0) + ' KB';
-    return (bytes/1024/1024).toFixed(1) + ' MB';
+  /* ── 列表 ── */
+  function fmtSize(b){
+    if(b < 1024) return b + ' B';
+    if(b < 1048576) return (b/1024).toFixed(0) + ' KB';
+    return (b/1048576).toFixed(1) + ' MB';
   }
-
-  function move(idx, dir){
-    const target = idx + dir;
-    if(target < 0 || target >= images.length) return;
-    [images[idx], images[target]] = [images[target], images[idx]];
+  function move(i,d){
+    const t = i + d;
+    if(t < 0 || t >= images.length) return;
+    [images[i], images[t]] = [images[t], images[i]];
     render();
   }
-
-  function remove(idx){
-    images.splice(idx, 1);
-    render();
-  }
+  function remove(i){ images.splice(i,1); render(); }
 
   function render(){
     list.innerHTML = '';
     countEl.textContent = images.length + ' 張圖片';
     emptyMsg.style.display = images.length ? 'none' : 'block';
     clearAllBtn.style.display = images.length ? 'inline' : 'none';
-    goBtn.disabled = images.length === 0;
+    goBtn.disabled = images.length === 0 || busy;
 
-    images.forEach((im, idx) => {
+    images.forEach((im, i) => {
       const row = document.createElement('div');
       row.className = 'item';
-      row.innerHTML = `
-        <div class="idx">${idx+1}</div>
-        <div class="thumb-wrap"><img src="${im.dataURL}"></div>
-        <div class="info">
-          <div class="fname">${im.file.name}</div>
-          <div class="fsize">${fmtSize(im.file.size)} · ${im.w}×${im.h}</div>
-        </div>
-        <div class="ctrls">
-          <button class="up" ${idx===0?'disabled':''} title="上移">↑</button>
-          <button class="down" ${idx===images.length-1?'disabled':''} title="下移">↓</button>
-          <button class="del" title="移除">✕</button>
-        </div>
-      `;
-      row.querySelector('.up').addEventListener('click', () => move(idx, -1));
-      row.querySelector('.down').addEventListener('click', () => move(idx, 1));
-      row.querySelector('.del').addEventListener('click', () => remove(idx));
+
+      const idx = document.createElement('div');
+      idx.className = 'idx'; idx.textContent = i + 1;
+
+      const tw = document.createElement('div');
+      tw.className = 'thumb-wrap';
+      const timg = document.createElement('img');
+      timg.src = im.dataURL; timg.alt = '';
+      tw.appendChild(timg);
+
+      const info = document.createElement('div');
+      info.className = 'info';
+      const fn = document.createElement('div');
+      fn.className = 'fname'; fn.textContent = im.file.name;
+      const fs = document.createElement('div');
+      fs.className = 'fsize';
+      fs.textContent = fmtSize(im.file.size) + ' · ' + im.w + '×' + im.h;
+      info.append(fn, fs);
+
+      const ctrls = document.createElement('div');
+      ctrls.className = 'ctrls';
+      const up = document.createElement('button');
+      up.textContent = '↑'; up.disabled = i === 0;
+      up.setAttribute('aria-label','上移'); up.onclick = () => move(i,-1);
+      const dn = document.createElement('button');
+      dn.textContent = '↓'; dn.disabled = i === images.length - 1;
+      dn.setAttribute('aria-label','下移'); dn.onclick = () => move(i,1);
+      const del = document.createElement('button');
+      del.textContent = '✕'; del.className = 'del';
+      del.setAttribute('aria-label','移除'); del.onclick = () => remove(i);
+      ctrls.append(up, dn, del);
+
+      row.append(idx, tw, info, ctrls);
       list.appendChild(row);
     });
   }
 
-  clearAllBtn.addEventListener('click', () => {
-    images = [];
-    render();
-    statusEl.textContent = '';
-    statusEl.className = 'status';
-  });
+  clearAllBtn.addEventListener('click', () => { images = []; render(); clearStatus(); });
+
+  function setStatus(t, ok){
+    statusEl.textContent = t;
+    statusEl.className = 'status' + (ok ? ' ok' : '');
+  }
+  function clearStatus(){ setStatus(''); }
+
+  /* ── 尺寸運算 ── */
+  function fitArea(w,h){
+    if(w*h <= AREA_CAP && Math.max(w,h) <= EDGE_CAP) return [w,h];
+    const s = Math.min(Math.sqrt(AREA_CAP/(w*h)), EDGE_CAP/Math.max(w,h));
+    return [Math.max(1,Math.round(w*s)), Math.max(1,Math.round(h*s))];
+  }
+
+  // 原生版面:頁面 = 圖片尺寸(只縮細,唔放大)
+  function planNative(im, qs){
+    let w = im.w, h = im.h;
+    if(qs.cap){
+      const long = Math.max(w,h);
+      if(long > qs.cap){ const s = qs.cap/long; w = Math.round(w*s); h = Math.round(h*s); }
+    }
+    [w,h] = fitArea(w,h);
+    return { pageW:w, pageH:h, cvW:w, cvH:h, dx:0, dy:0, dw:w, dh:h };
+  }
+
+  // A4 / B5:固定頁面比例,圖片置中 contain,四邊留白
+  function planPage(im, qs){
+    const [shortSide, longSide] = PAGE[cfg.layout];
+    const land = cfg.orient === 'l' || (cfg.orient === 'auto' && im.w > im.h);
+    const pageW = land ? longSide : shortSide;
+    const pageH = land ? shortSide : longSide;
+
+    const m = MARGIN[cfg.margin] * Math.min(pageW, pageH);
+    const innerW = pageW - 2*m, innerH = pageH - 2*m;
+
+    const s = Math.min(innerW/im.w, innerH/im.h);
+    const dw = im.w*s, dh = im.h*s;
+    const dx = (pageW - dw)/2, dy = (pageH - dh)/2;
+
+    // 決定 canvas 解像度:令圖片部分達到目標像素
+    const targetImgPx = qs.cap ? Math.min(qs.cap, Math.max(im.w, im.h)) : Math.max(im.w, im.h);
+    const k = targetImgPx / Math.max(dw, dh);
+    let cvW = Math.round(pageW*k), cvH = Math.round(pageH*k);
+    [cvW, cvH] = fitArea(cvW, cvH);
+    const kk = cvW / pageW;
+
+    return { pageW, pageH, cvW, cvH,
+             dx: dx*kk, dy: dy*kk, dw: dw*kk, dh: dh*kk };
+  }
+
+  /* ── 產生 PDF ── */
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  function loadImg(src){
+    return new Promise((res, rej) => {
+      const i = new Image();
+      i.onload = () => res(i);
+      i.onerror = () => rej(new Error('圖片解碼失敗'));
+      i.src = src;
+    });
+  }
+  const nextFrame = () => new Promise(r => setTimeout(r, 0));
 
   goBtn.addEventListener('click', async () => {
-    if(images.length === 0) return;
-    goBtn.disabled = true;
-    goBtn.classList.add('loading');
-    statusEl.className = 'status';
-    statusEl.textContent = '產生緊…';
+    if(!images.length || busy) return;
+    busy = true; goBtn.disabled = true;
+
+    const qs = QUALITY[cfg.quality];
+    let pdf = null;
 
     try{
       const { jsPDF } = window.jspdf;
-      let pdf;
 
-      images.forEach((im, idx) => {
-        const format = im.file.type === 'image/png' ? 'PNG' : 'JPEG';
-        if(idx === 0){
-          pdf = new jsPDF({
-            unit: 'px',
-            format: [im.w, im.h],
-            hotfixes: ['px_scaling']
-          });
-        } else {
-          pdf.addPage([im.w, im.h]);
+      for(let i = 0; i < images.length; i++){
+        const im = images[i];
+        setStatus('處理緊 ' + (i+1) + ' / ' + images.length + '…');
+        await nextFrame();
+
+        const plan = cfg.layout === 'native' ? planNative(im, qs) : planPage(im, qs);
+        const img = await loadImg(im.dataURL);
+
+        canvas.width = plan.cvW;
+        canvas.height = plan.cvH;
+
+        const isPNG = /png/i.test(im.file.type);
+        // 原始畫質 + PNG 原稿 → 輸出 PNG(無損);其餘一律 JPEG
+        const outPNG = isPNG && cfg.quality === 'original';
+
+        ctx.clearRect(0,0,plan.cvW,plan.cvH);
+        // 原生版面 + PNG 輸出時保留透明背景;其餘鋪白底
+        if(!(outPNG && cfg.layout === 'native')){
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0,0,plan.cvW,plan.cvH);
         }
-        pdf.addImage(im.dataURL, format, 0, 0, im.w, im.h);
-      });
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, plan.dx, plan.dy, plan.dw, plan.dh);
+
+        const out = outPNG ? canvas.toDataURL('image/png')
+                           : canvas.toDataURL('image/jpeg', qs.q);
+        const fmt = outPNG ? 'PNG' : 'JPEG';
+        const o = plan.pageW > plan.pageH ? 'l' : 'p';
+
+        if(i === 0){
+          pdf = new jsPDF({ orientation:o, unit:'px',
+                            format:[plan.pageW, plan.pageH], hotfixes:['px_scaling'] });
+        }else{
+          pdf.addPage([plan.pageW, plan.pageH], o);
+        }
+        pdf.addImage(out, fmt, 0, 0, plan.pageW, plan.pageH, undefined, 'FAST');
+      }
+
+      // 釋放 canvas 記憶體
+      canvas.width = canvas.height = 1;
+
+      setStatus('輸出緊…');
+      await nextFrame();
 
       let name = pdfNameInput.value.trim() || '合成文件';
-      if(!name.toLowerCase().endsWith('.pdf')) name += '.pdf';
-      pdf.save(name);
+      if(!/\.pdf$/i.test(name)) name += '.pdf';
 
-      statusEl.textContent = 'PDF 已產生';
-      statusEl.classList.add('ok');
+      const blob = pdf.output('blob');
+      const before = images.reduce((a,b) => a + b.file.size, 0);
+      const after = blob.size;
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+
+      const pct = Math.round((1 - after/before) * 100);
+      const trend = after < before ? '省 ' + pct + '%' : '大 ' + Math.abs(pct) + '%';
+      setStatus(fmtSize(before) + ' → ' + fmtSize(after) + '(' + trend + ')', true);
+
     }catch(err){
       console.error(err);
-      statusEl.textContent = '出錯:' + err.message;
+      setStatus('出錯:' + (err && err.message ? err.message : '未知問題'));
     }finally{
-      goBtn.disabled = false;
-      goBtn.classList.remove('loading');
+      busy = false;
+      goBtn.disabled = images.length === 0;
     }
   });
 
