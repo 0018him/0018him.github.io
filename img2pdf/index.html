@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>合成 PDF</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --paper:#FDFDFB;
+    --ink:#1C1B1A;
+    --ink-soft:#6B675E;
+    --line:#E3DFD8;
+    --seal:#B23A2E;
+    --seal-soft:#F4E3E0;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"Noto Serif TC", serif;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .wrap{
+    max-width:640px;
+    margin:0 auto;
+    padding:48px 24px 120px;
+  }
+  .eyebrow{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:11px;
+    letter-spacing:0.14em;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+    margin-bottom:10px;
+  }
+  h1{
+    font-size:28px;
+    font-weight:700;
+    margin:0 0 8px;
+    letter-spacing:0.02em;
+  }
+  .sub{
+    font-size:14px;
+    color:var(--ink-soft);
+    line-height:1.7;
+    margin:0 0 36px;
+  }
+
+  /* 上傳區 */
+  .dropzone{
+    border:1.5px dashed var(--line);
+    border-radius:10px;
+    padding:36px 20px;
+    text-align:center;
+    cursor:pointer;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .dropzone.drag{
+    border-color:var(--seal);
+    background:var(--seal-soft);
+  }
+  .dropzone .icon{
+    font-size:22px;
+    margin-bottom:8px;
+    color:var(--ink-soft);
+  }
+  .dropzone .txt{
+    font-size:14px;
+    color:var(--ink-soft);
+  }
+  .dropzone .txt b{
+    color:var(--ink);
+    font-weight:600;
+  }
+  input[type=file]{ display:none; }
+
+  /* 計數 */
+  .meta-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin:28px 0 12px;
+    font-family:"IBM Plex Mono", monospace;
+    font-size:12px;
+    color:var(--ink-soft);
+  }
+  .meta-row button{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:12px;
+    color:var(--ink-soft);
+    background:none;
+    border:none;
+    cursor:pointer;
+    text-decoration:underline;
+    text-underline-offset:3px;
+    padding:0;
+  }
+
+  /* 縮圖列表 */
+  .list{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .item{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:10px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    background:#fff;
+  }
+  .idx{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:11px;
+    color:var(--ink-soft);
+    width:18px;
+    flex-shrink:0;
+    text-align:right;
+  }
+  .thumb-wrap{
+    position:relative;
+    width:52px;
+    height:52px;
+    flex-shrink:0;
+    border-radius:5px;
+    overflow:hidden;
+    border:1px solid var(--line);
+  }
+  .thumb-wrap img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+  }
+  .thumb-wrap::after{
+    content:"";
+    position:absolute;
+    top:0; right:0;
+    width:12px; height:12px;
+    background:linear-gradient(135deg, transparent 50%, rgba(0,0,0,0.08) 50%);
+  }
+  .info{
+    flex:1;
+    min-width:0;
+  }
+  .fname{
+    font-size:13px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .fsize{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:11px;
+    color:var(--ink-soft);
+    margin-top:2px;
+  }
+  .ctrls{
+    display:flex;
+    gap:4px;
+    flex-shrink:0;
+  }
+  .ctrls button{
+    width:28px;
+    height:28px;
+    border:1px solid var(--line);
+    background:#fff;
+    border-radius:5px;
+    color:var(--ink-soft);
+    font-size:13px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .ctrls button:active{ background:var(--seal-soft); border-color:var(--seal); }
+  .ctrls button.del{ color:var(--seal); }
+  .ctrls button:disabled{ opacity:0.3; }
+
+  .empty{
+    text-align:center;
+    font-size:13px;
+    color:var(--ink-soft);
+    padding:24px 0;
+  }
+
+  /* 底部操作列 */
+  .bar{
+    position:fixed;
+    left:0; right:0; bottom:0;
+    background:var(--paper);
+    border-top:1px solid var(--line);
+    padding:14px 24px calc(14px + env(safe-area-inset-bottom));
+  }
+  .bar-inner{
+    max-width:640px;
+    margin:0 auto;
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .fname-input{
+    flex:1;
+    font-family:"IBM Plex Mono", monospace;
+    font-size:12px;
+    padding:10px 12px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    background:#fff;
+    color:var(--ink);
+    min-width:0;
+  }
+  .fname-input:focus{ outline:none; border-color:var(--seal); }
+  .go{
+    font-family:"Noto Serif TC", serif;
+    font-size:14px;
+    font-weight:600;
+    padding:10px 20px;
+    background:var(--seal);
+    color:#fff;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+  .go:disabled{ background:var(--line); color:var(--ink-soft); cursor:not-allowed; }
+  .go.loading{ opacity:0.7; }
+
+  .status{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:11px;
+    color:var(--ink-soft);
+    text-align:center;
+    margin-top:8px;
+    min-height:14px;
+  }
+  .status.ok{ color:var(--seal); }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="eyebrow">工具 / img → pdf</div>
+  <h1>合成 PDF</h1>
+  <p class="sub">上傳多張 JPG / PNG,調整順序後,合成做一份 PDF。全部喺瀏覽器入面處理,唔會上傳去任何伺服器。</p>
+
+  <div class="dropzone" id="dropzone">
+    <div class="icon">＋</div>
+    <div class="txt"><b>點擊選擇圖片</b>,或拖曳到呢度</div>
+    <input type="file" id="fileInput" accept="image/jpeg,image/jpg,image/png" multiple>
+  </div>
+
+  <div class="meta-row">
+    <span id="count">0 張圖片</span>
+    <button id="clearAll" style="display:none;">全部清除</button>
+  </div>
+
+  <div class="list" id="list"></div>
+  <div class="empty" id="emptyMsg">未有圖片</div>
+</div>
+
+<div class="bar">
+  <div class="bar-inner">
+    <input type="text" class="fname-input" id="pdfName" placeholder="檔案名稱" value="合成文件">
+    <button class="go" id="goBtn" disabled>產生 PDF</button>
+  </div>
+  <div class="status" id="status"></div>
+</div>
+
+<script>
+(function(){
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const list = document.getElementById('list');
+  const countEl = document.getElementById('count');
+  const emptyMsg = document.getElementById('emptyMsg');
+  const clearAllBtn = document.getElementById('clearAll');
+  const goBtn = document.getElementById('goBtn');
+  const pdfNameInput = document.getElementById('pdfName');
+  const statusEl = document.getElementById('status');
+
+  let images = []; // {id, file, dataURL, w, h}
+  let seq = 0;
+
+  dropzone.addEventListener('click', () => fileInput.click());
+
+  ['dragenter','dragover'].forEach(ev => {
+    dropzone.addEventListener(ev, e => {
+      e.preventDefault();
+      dropzone.classList.add('drag');
+    });
+  });
+  ['dragleave','drop'].forEach(ev => {
+    dropzone.addEventListener(ev, e => {
+      e.preventDefault();
+      dropzone.classList.remove('drag');
+    });
+  });
+  dropzone.addEventListener('drop', e => {
+    handleFiles(e.dataTransfer.files);
+  });
+
+  fileInput.addEventListener('change', e => {
+    handleFiles(e.target.files);
+    fileInput.value = '';
+  });
+
+  function handleFiles(fileList){
+    const valid = Array.from(fileList).filter(f =>
+      /^image\/(jpeg|jpg|png)$/.test(f.type)
+    );
+    valid.forEach(readFile);
+  }
+
+  function readFile(file){
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        images.push({
+          id: seq++,
+          file,
+          dataURL: e.target.result,
+          w: img.naturalWidth,
+          h: img.naturalHeight
+        });
+        render();
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function fmtSize(bytes){
+    if(bytes < 1024) return bytes + ' B';
+    if(bytes < 1024*1024) return (bytes/1024).toFixed(0) + ' KB';
+    return (bytes/1024/1024).toFixed(1) + ' MB';
+  }
+
+  function move(idx, dir){
+    const target = idx + dir;
+    if(target < 0 || target >= images.length) return;
+    [images[idx], images[target]] = [images[target], images[idx]];
+    render();
+  }
+
+  function remove(idx){
+    images.splice(idx, 1);
+    render();
+  }
+
+  function render(){
+    list.innerHTML = '';
+    countEl.textContent = images.length + ' 張圖片';
+    emptyMsg.style.display = images.length ? 'none' : 'block';
+    clearAllBtn.style.display = images.length ? 'inline' : 'none';
+    goBtn.disabled = images.length === 0;
+
+    images.forEach((im, idx) => {
+      const row = document.createElement('div');
+      row.className = 'item';
+      row.innerHTML = `
+        <div class="idx">${idx+1}</div>
+        <div class="thumb-wrap"><img src="${im.dataURL}"></div>
+        <div class="info">
+          <div class="fname">${im.file.name}</div>
+          <div class="fsize">${fmtSize(im.file.size)} · ${im.w}×${im.h}</div>
+        </div>
+        <div class="ctrls">
+          <button class="up" ${idx===0?'disabled':''} title="上移">↑</button>
+          <button class="down" ${idx===images.length-1?'disabled':''} title="下移">↓</button>
+          <button class="del" title="移除">✕</button>
+        </div>
+      `;
+      row.querySelector('.up').addEventListener('click', () => move(idx, -1));
+      row.querySelector('.down').addEventListener('click', () => move(idx, 1));
+      row.querySelector('.del').addEventListener('click', () => remove(idx));
+      list.appendChild(row);
+    });
+  }
+
+  clearAllBtn.addEventListener('click', () => {
+    images = [];
+    render();
+    statusEl.textContent = '';
+    statusEl.className = 'status';
+  });
+
+  goBtn.addEventListener('click', async () => {
+    if(images.length === 0) return;
+    goBtn.disabled = true;
+    goBtn.classList.add('loading');
+    statusEl.className = 'status';
+    statusEl.textContent = '產生緊…';
+
+    try{
+      const { jsPDF } = window.jspdf;
+      let pdf;
+
+      images.forEach((im, idx) => {
+        const format = im.file.type === 'image/png' ? 'PNG' : 'JPEG';
+        if(idx === 0){
+          pdf = new jsPDF({
+            unit: 'px',
+            format: [im.w, im.h],
+            hotfixes: ['px_scaling']
+          });
+        } else {
+          pdf.addPage([im.w, im.h]);
+        }
+        pdf.addImage(im.dataURL, format, 0, 0, im.w, im.h);
+      });
+
+      let name = pdfNameInput.value.trim() || '合成文件';
+      if(!name.toLowerCase().endsWith('.pdf')) name += '.pdf';
+      pdf.save(name);
+
+      statusEl.textContent = 'PDF 已產生';
+      statusEl.classList.add('ok');
+    }catch(err){
+      console.error(err);
+      statusEl.textContent = '出錯:' + err.message;
+    }finally{
+      goBtn.disabled = false;
+      goBtn.classList.remove('loading');
+    }
+  });
+
+  render();
+})();
+</script>
+
+</body>
+</html>
