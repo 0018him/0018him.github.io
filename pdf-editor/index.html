@@ -1336,7 +1336,9 @@
 
   render();
 })();
+</script>
 
+<script>
 /* ══ 工具二:壓縮 PDF ══ */
 (function(){
   "use strict";
@@ -1375,7 +1377,7 @@
       exitDone(); clearStatus();
     });
   }
-  bindSeg('segMode','mode', null, () => { modeDesc.textContent = MODE[cfg.mode].desc; });
+  bindSeg('c-segMode','mode', null, () => { modeDesc.textContent = MODE[cfg.mode].desc; });
   modeDesc.textContent = MODE.scale.desc;
 
   // 目標大細選項按原檔動態產生 —— 大過原檔嘅選項冇意義,唔顯示
@@ -1768,7 +1770,9 @@
     }
   });
 })();
+</script>
 
+<script>
 /* ── 路由:單頁多工具,用 hash 分頁 ── */
 (function(){
   "use strict";
