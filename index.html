@@ -3,11 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>0018him</title>
+<title>index</title>
 <style>
   :root{
     --bg:#ffffff;
     --txt:#1a1a1a;
+    --dim:#9a9a9a;
     --line:#e4e4e4;
     --line-hi:#c9c9c9;
   }
@@ -24,6 +25,19 @@
     padding:60px 24px;
   }
   .wrap{width:100%;max-width:420px;}
+  h1{
+    margin:0 0 28px;
+    padding-left:2px;
+    font-size:14px;
+    font-weight:500;
+    letter-spacing:.22em;
+    text-transform:lowercase;
+    color:var(--dim);
+    user-select:none;
+    -webkit-user-select:none;
+    -webkit-touch-callout:none;
+    cursor:default;
+  }
   a.item{
     display:block;
     text-decoration:none;
@@ -38,7 +52,7 @@
     transition:border-color .18s ease, background .18s ease, transform .18s ease;
   }
   a.item:active{transform:scale(.985);}
-  a.item:focus-visible{outline:2px solid #1a1a1a;outline-offset:3px;}
+  a.item:focus-visible{outline:2px solid var(--txt);outline-offset:3px;}
   @media (hover:hover){
     a.item:hover{border-color:var(--line-hi);background:#fafafa;}
   }
@@ -48,59 +62,60 @@
   @media (prefers-reduced-motion:reduce){
     *{animation:none !important;transition:none !important;}
   }
-  #knob{
-    display:block;
-    width:44px;
-    height:32px;
-    margin:28px auto 0;
-    cursor:default;
-    user-select:none;
-  }
-  #knob::after{
-    content:"";
-    display:block;
-    width:4px;
-    height:4px;
-    border-radius:50%;
-    background:#e0e0e0;
-    margin:14px auto 0;
-  }
 </style>
 </head>
 <body>
 <div class="wrap">
 
+  <h1 id="title">index</h1>
+
   <a class="item" href="./meet-up/">夾日子</a>
 
   <a class="item" href="./boardgame/">派對遊戲</a>
+
+  <a class="item" href="./pdf-editor/#home">PDF 編輯工具</a>
 
   <div class="hidden-group" id="secret">
     <a class="item" href="./song-parts/">歌曲分部</a>
   </div>
 
-  <div id="knob"></div>
 </div>
 
 <script>
 (function(){
   var box = document.getElementById('secret');
-  var knob = document.getElementById('knob');
+  var title = document.getElementById('title');
+  var HOLD = 800; // 長按毫秒數
+  var timer = null;
 
   function reveal(){ box.classList.add('on'); }
 
+  // 網址帶 #all 或 ?all 一樣可以打開
   function checkUrl(){
     if (location.hash === '#all' || new URLSearchParams(location.search).has('all')) reveal();
   }
   checkUrl();
   window.addEventListener('hashchange', checkUrl);
 
-  var count = 0, timer = null;
-  knob.addEventListener('click', function(){
-    count++;
+  function start(){
     clearTimeout(timer);
-    timer = setTimeout(function(){ count = 0; }, 3000);
-    if (count >= 5){ count = 0; reveal(); }
-  });
+    timer = setTimeout(reveal, HOLD);
+  }
+  function cancel(){
+    clearTimeout(timer);
+  }
+
+  title.addEventListener('touchstart', start, {passive:true});
+  title.addEventListener('touchend', cancel);
+  title.addEventListener('touchcancel', cancel);
+  title.addEventListener('touchmove', cancel, {passive:true});
+
+  title.addEventListener('mousedown', start);
+  title.addEventListener('mouseup', cancel);
+  title.addEventListener('mouseleave', cancel);
+
+  // 避免 iOS 長按彈出選字／複製選單
+  title.addEventListener('contextmenu', function(e){ e.preventDefault(); });
 })();
 </script>
 </body>

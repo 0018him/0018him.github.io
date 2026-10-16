@@ -36,10 +36,14 @@
   }
   header.scrolled{border-bottom-color:var(--line);}
   .brand{margin-right:auto;display:flex;align-items:baseline;gap:10px;min-width:0;}
-  h1{
-    margin:0;font-size:14px;font-weight:500;letter-spacing:.22em;color:var(--dim);
-    user-select:none;-webkit-user-select:none;white-space:nowrap;
+  .home{
+    display:inline-flex;align-items:baseline;gap:8px;margin:0;padding:6px 4px 6px 0;
+    font-size:14px;font-weight:500;letter-spacing:.22em;color:var(--dim);
+    text-decoration:none;white-space:nowrap;
   }
+  .home .arr{letter-spacing:0;}
+  .home:active{color:var(--txt);}
+  @media (hover:hover){ .home:hover{color:var(--txt);} }
   #count{font-size:12px;color:var(--dim);white-space:nowrap;}
 
   .btn{
@@ -217,7 +221,7 @@
   #fileInput{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;left:-9999px;}
 
   @media (max-width:440px){
-    h1{display:none;}
+    .home .lbl{display:none;}
     header{gap:6px;}
     header .btn{padding:8px 11px;font-size:14px;}
     header .btn.icon{padding:8px 9px;}
@@ -234,7 +238,7 @@
 
 <header id="top">
   <div class="brand">
-    <h1>pdf-edit</h1>
+    <a class="home" href="../pdf-editor/#home" aria-label="返回 PDF 工具"><span class="arr">←</span><span class="lbl">pdf-edit</span></a>
     <span id="count"></span>
   </div>
   <button class="btn" id="btnAdd">加入</button>
