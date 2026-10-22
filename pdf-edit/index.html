@@ -722,6 +722,316 @@ function paintPage(p, longPx, adj, base){
   return rotateInto(nat, p.rot);
 }
 
+/* ================= PDF 低階工具：搵圖、換圖、保留文字層 ================= */
+var PDFX = (function(){
+  var L = PDFLib, N = function(n){ return L.PDFName.of(n); };
+  var IDENT = [1, 0, 0, 1, 0, 0];
+
+  function look(ctx, o){ return o instanceof L.PDFRef ? ctx.lookup(o) : o; }
+  function num(o){ return o && typeof o.asNumber === 'function' ? o.asNumber() : (typeof o === 'number' ? o : NaN); }
+  function nameOf(o){ return o instanceof L.PDFName ? o.decodeText() : null; }
+  function mul(m, n){
+    return [m[0] * n[0] + m[1] * n[2], m[0] * n[1] + m[1] * n[3],
+            m[2] * n[0] + m[3] * n[2], m[2] * n[1] + m[3] * n[3],
+            m[4] * n[0] + m[5] * n[2] + n[4], m[4] * n[1] + m[5] * n[3] + n[5]];
+  }
+  function streamBytes(st){
+    if (st instanceof L.PDFRawStream) return L.decodePDFRawStream(st).decode();
+    if (st && typeof st.getContents === 'function') return st.getContents();
+    return new Uint8Array(0);
+  }
+  function contentBytes(ctx, contents){
+    contents = look(ctx, contents);
+    if (!contents) return new Uint8Array(0);
+    var parts = [];
+    if (contents instanceof L.PDFArray){
+      for (var i = 0; i < contents.size(); i++) parts.push(streamBytes(look(ctx, contents.get(i))));
+    } else parts.push(streamBytes(contents));
+    var len = parts.reduce(function(a, p){ return a + p.length + 1; }, 0), out = new Uint8Array(len), o = 0;
+    parts.forEach(function(p){ out.set(p, o); o += p.length; out[o++] = 10; });
+    return out;
+  }
+
+  // 內容串流斷詞：只理 q / Q / cm / Do，其他略過（包括字串、內嵌圖片）
+  function ops(b){
+    var res = [], stack = [], i = 0, n = b.length;
+    function ws(c){ return c === 32 || c === 10 || c === 13 || c === 9 || c === 12 || c === 0; }
+    function delim(c){ return c === 40 || c === 41 || c === 60 || c === 62 || c === 91 || c === 93 || c === 123 || c === 125 || c === 47 || c === 37; }
+    while (i < n){
+      var c = b[i];
+      if (ws(c)){ i++; continue; }
+      if (c === 37){ while (i < n && b[i] !== 10 && b[i] !== 13) i++; continue; }
+      if (c === 40){ var d = 1; i++; while (i < n && d){ if (b[i] === 92) i += 2; else { if (b[i] === 40) d++; else if (b[i] === 41) d--; i++; } } stack.push(null); continue; }
+      if (c === 60){
+        if (b[i + 1] === 60){ i += 2; stack.push(null); continue; }
+        while (i < n && b[i] !== 62) i++; i++; stack.push(null); continue;
+      }
+      if (c === 62){ i += (b[i + 1] === 62) ? 2 : 1; continue; }
+      if (c === 91 || c === 93 || c === 123 || c === 125){ i++; continue; }
+      if (c === 47){
+        var s = ++i; while (i < n && !ws(b[i]) && !delim(b[i])) i++;
+        var nm = ''; for (var k = s; k < i; k++) nm += String.fromCharCode(b[k]);
+        stack.push({ name: nm.replace(/#([0-9A-Fa-f]{2})/g, function(_, h){ return String.fromCharCode(parseInt(h, 16)); }) });
+        continue;
+      }
+      var s2 = i; while (i < n && !ws(b[i]) && !delim(b[i])) i++;
+      if (i === s2){ i++; continue; }
+      var t = ''; for (var k2 = s2; k2 < i; k2++) t += String.fromCharCode(b[k2]);
+      if (/^[+\-]?(\d+\.?\d*|\.\d+)$/.test(t)){ stack.push(parseFloat(t)); continue; }
+      if (t === 'ID'){
+        i++;   // 內嵌圖片數據：搵 EI
+        while (i < n - 2 && !(ws(b[i]) && b[i + 1] === 69 && b[i + 2] === 73 && (i + 3 >= n || ws(b[i + 3])))) i++;
+        i += 3; stack = []; continue;
+      }
+      if (t === 'q' || t === 'Q' || t === 'cm' || t === 'Do') res.push([t, stack]);
+      stack = [];
+    }
+    return res;
+  }
+
+  // 列出一頁畫咗嘅所有圖片（包括表單入面嘅）
+  function pageImages(page){
+    var ctx = page.doc.context, found = [];
+    function walk(bytes, res, ctm, depth, formRef){
+      if (depth > 4) return;
+      var st = [], m = ctm;
+      ops(bytes).forEach(function(op){
+        if (op[0] === 'q') st.push(m);
+        else if (op[0] === 'Q') m = st.length ? st.pop() : ctm;
+        else if (op[0] === 'cm' && op[1].length === 6 && op[1].every(function(v){ return typeof v === 'number'; })) m = mul(op[1], m);
+        else if (op[0] === 'Do' && op[1][0] && op[1][0].name){
+          var xo = res && look(ctx, res.get(N('XObject')));
+          var ref = xo && xo.get(N(op[1][0].name));
+          var obj = look(ctx, ref);
+          if (!obj || !obj.dict) return;
+          var sub = nameOf(obj.dict.get(N('Subtype')));
+          if (sub === 'Image') found.push({ name: op[1][0].name, ref: ref, ctm: m, inForm: depth > 0, form: formRef });
+          else if (sub === 'Form'){
+            var mx = look(ctx, obj.dict.get(N('Matrix')));
+            var fm = mx instanceof L.PDFArray && mx.size() === 6 ? [0, 1, 2, 3, 4, 5].map(function(k){ return num(look(ctx, mx.get(k))); }) : IDENT;
+            var fres = look(ctx, obj.dict.get(N('Resources'))) || res;
+            walk(streamBytes(obj), fres, mul(fm, m), depth + 1, ref);
+          }
+        }
+      });
+    }
+    walk(contentBytes(ctx, page.node.Contents()), page.node.Resources(), IDENT, 0, null);
+    return found;
+  }
+
+  function bbox(m){
+    var xs = [m[4], m[0] + m[4], m[2] + m[4], m[0] + m[2] + m[4]];
+    var ys = [m[5], m[1] + m[5], m[3] + m[5], m[1] + m[3] + m[5]];
+    return [Math.min.apply(null, xs), Math.min.apply(null, ys), Math.max.apply(null, xs), Math.max.apply(null, ys)];
+  }
+
+  // 「掃描頁」：只有一張圖，而且鋪滿成頁
+  function scanImage(page){
+    var imgs = pageImages(page);
+    if (imgs.length !== 1 || imgs[0].inForm) return null;
+    var cb = page.getCropBox(), b = bbox(imgs[0].ctm);
+    var ix = Math.max(0, Math.min(b[2], cb.x + cb.width) - Math.max(b[0], cb.x));
+    var iy = Math.max(0, Math.min(b[3], cb.y + cb.height) - Math.max(b[1], cb.y));
+    if (ix * iy < 0.9 * cb.width * cb.height) return null;
+    return imgs[0];
+  }
+
+  // 圖片資料：判斷可唔可以直接用瀏覽器解碼
+  function imageInfo(ctx, ref){
+    var st = look(ctx, ref), d = st.dict;
+    var f = look(ctx, d.get(N('Filter'))), filters = [];
+    if (f instanceof L.PDFArray){ for (var i = 0; i < f.size(); i++) filters.push(nameOf(look(ctx, f.get(i)))); }
+    else if (f) filters.push(nameOf(f));
+    var cs = look(ctx, d.get(N('ColorSpace'))), comps = 0;
+    var csn = nameOf(cs);
+    if (csn === 'DeviceRGB' || csn === 'CalRGB') comps = 3;
+    else if (csn === 'DeviceGray' || csn === 'CalGray') comps = 1;
+    else if (cs instanceof L.PDFArray && nameOf(look(ctx, cs.get(0))) === 'ICCBased'){
+      var icc = look(ctx, cs.get(1)); var nn = icc && num(look(ctx, icc.dict.get(N('N'))));
+      if (nn === 1 || nn === 3) comps = nn;
+    }
+    return {
+      st: st, w: num(look(ctx, d.get(N('Width')))), h: num(look(ctx, d.get(N('Height')))),
+      filters: filters, comps: comps, bpc: num(look(ctx, d.get(N('BitsPerComponent')))),
+      smask: d.get(N('SMask')), mask: d.get(N('Mask')), decode: d.get(N('Decode')),
+      parms: d.get(N('DecodeParms')), imageMask: d.get(N('ImageMask'))
+    };
+  }
+
+  function stripExif(b){
+    if (b[0] !== 0xFF || b[1] !== 0xD8) return b;
+    var out = [b.subarray(0, 2)], i = 2;
+    while (i + 4 <= b.length && b[i] === 0xFF){
+      var m = b[i + 1];
+      if (m === 0xDA || m === 0xD9) break;
+      var len = (b[i + 2] << 8) | b[i + 3];
+      if (m !== 0xE1) out.push(b.subarray(i, i + 2 + len));
+      i += 2 + len;
+    }
+    out.push(b.subarray(i));
+    var total = out.reduce(function(a, p){ return a + p.length; }, 0), r = new Uint8Array(total), o = 0;
+    out.forEach(function(p){ r.set(p, o); o += p.length; });
+    return r;
+  }
+
+  // 解碼做 canvas；做唔到就回傳 null（由呼叫者揀後備方法）
+  async function decodeImage(info, maxSide){
+    if (info.imageMask || info.decode || info.mask || !info.comps) return null;
+    var w = info.w, h = info.h;
+    if (!(w > 0 && h > 0)) return null;
+    var k = Math.min(1, maxSide / Math.max(w, h), Math.sqrt(MAX_CANVAS_PX / (w * h)));
+    var cw = Math.max(1, Math.round(w * k)), ch = Math.max(1, Math.round(h * k));
+    if (info.filters.length === 1 && info.filters[0] === 'DCTDecode'){
+      var blob = new Blob([stripExif(info.st.getContents())], { type: 'image/jpeg' });
+      var url = URL.createObjectURL(blob), img;
+      try { img = await loadImg(url); } catch (e) { img = null; } finally { URL.revokeObjectURL(url); }
+      if (!img || img.naturalWidth !== w || img.naturalHeight !== h) return null;
+      var c = newCanvas(cw, ch);
+      c.getContext('2d').drawImage(img, 0, 0, cw, ch);
+      return c;
+    }
+    if (info.bpc === 8 && info.filters.every(function(x){ return x === 'FlateDecode' || x === 'LZWDecode'; }) && !info.parms){
+      var raw;
+      try { raw = L.decodePDFRawStream(info.st).decode(); } catch (e) { return null; }
+      if (raw.length < w * h * info.comps) return null;
+      var full = newCanvas(w, h), fx = full.getContext('2d'), id = fx.createImageData(w, h), px = id.data;
+      for (var p = 0, q = 0; p < w * h; p++, q += 4){
+        if (info.comps === 3){ px[q] = raw[p * 3]; px[q + 1] = raw[p * 3 + 1]; px[q + 2] = raw[p * 3 + 2]; }
+        else { px[q] = px[q + 1] = px[q + 2] = raw[p]; }
+        px[q + 3] = 255;
+      }
+      fx.putImageData(id, 0, 0);
+      if (k === 1) return full;
+      var c2 = newCanvas(cw, ch);
+      c2.getContext('2d').drawImage(full, 0, 0, cw, ch);
+      freeCanvas(full);
+      return c2;
+    }
+    return null;
+  }
+
+  // 新圖片物件（JPEG），沿用原本嘅透明遮罩
+  function jpegXObject(ctx, bytes, w, h, gray, smask){
+    var st = ctx.stream(bytes, {
+      Type: 'XObject', Subtype: 'Image', Width: w, Height: h,
+      ColorSpace: gray ? 'DeviceGray' : 'DeviceRGB', BitsPerComponent: 8, Filter: 'DCTDecode'
+    });
+    if (smask) st.dict.set(N('SMask'), smask);
+    return ctx.register(st);
+  }
+
+  // 呢頁用自己一份資源，換圖唔會影響共用同一份資源嘅其他頁
+  function replaceOnPage(page, name, newRef){
+    var ctx = page.doc.context;
+    var res = page.node.Resources().clone(ctx);
+    var xo = look(ctx, res.get(N('XObject'))).clone(ctx);
+    xo.set(N(name), newRef);
+    res.set(N('XObject'), xo);
+    page.node.set(N('Resources'), res);
+  }
+
+  // 用 q … Q 包住原本內容，之後疊上去嘅嘢唔受原本變換影響
+  function wrapContents(page){
+    var ctx = page.doc.context, node = page.node, c = node.Contents();
+    var arr = ctx.obj([]);
+    arr.push(ctx.register(ctx.stream('q\n')));
+    if (c instanceof L.PDFArray){ for (var i = 0; i < c.size(); i++) arr.push(c.get(i)); }
+    else if (c) arr.push(node.get(N('Contents')));
+    arr.push(ctx.register(ctx.stream('\nQ\n')));
+    node.set(N('Contents'), arr);
+  }
+
+  // 刪走冇人用嘅物件（換走嘅舊圖）
+  function collectGarbage(doc){
+    var ctx = doc.context, seen = new Set(), todo = [];
+    function visit(o){
+      if (!o) return;
+      if (o instanceof L.PDFRef){ var key = o.toString(); if (seen.has(key)) return; seen.add(key); todo.push(ctx.lookup(o)); return; }
+      todo.push(o);
+    }
+    visit(ctx.trailerInfo.Root); visit(ctx.trailerInfo.Info);
+    while (todo.length){
+      var o = todo.pop();
+      if (!o) continue;
+      if (o instanceof L.PDFDict){ o.entries().forEach(function(e){ visit(e[1]); }); }
+      else if (o instanceof L.PDFArray){ for (var i = 0; i < o.size(); i++) visit(o.get(i)); }
+      else if (o.dict instanceof L.PDFDict){ o.dict.entries().forEach(function(e){ visit(e[1]); }); }
+    }
+    var removed = 0;
+    ctx.enumerateIndirectObjects().forEach(function(pair){
+      if (!seen.has(pair[0].toString())){ ctx.delete(pair[0]); removed++; }
+    });
+    return removed;
+  }
+
+  return { look: look, pageImages: pageImages, scanImage: scanImage, imageInfo: imageInfo, decodeImage: decodeImage,
+           jpegXObject: jpegXObject, replaceOnPage: replaceOnPage, wrapContents: wrapContents, collectGarbage: collectGarbage, bbox: bbox };
+})();
+
+/* ================= 調色 PDF 頁（保留文字層） ================= */
+function renderPdfUnrotated(s, idx, scaleFn){
+  return getJs(s).then(function(doc){ return doc.getPage(idx + 1); }).then(function(page){
+    var vp1 = page.getViewport({ scale: 1, rotation: 0 });
+    var k = scaleFn(vp1, page.view);
+    k = capScale(vp1.width, vp1.height, k);
+    var vp = page.getViewport({ scale: k, rotation: 0 });
+    var c = newCanvas(vp.width, vp.height);
+    return page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise.then(function(){
+      page.cleanup();
+      return { canvas: c, scale: k, view: page.view };
+    });
+  });
+}
+function adjustCanvas(src, adj){
+  var c = newCanvas(src.width, src.height);
+  drawAdjusted(c.getContext('2d'), src, adj, 0, 0, 0, c.width, c.height, c.width, c.height);
+  return c;
+}
+async function adjustPdfPage(out, pg, s, p){
+  var ctx = out.context;
+  var orig = settings.quality === 'original';
+  var q = orig ? 0.9 : 0.8;
+  var scan = null;
+  try { scan = PDFX.scanImage(pg); } catch (e) { console.warn(e); }
+  if (scan){
+    // 掃描頁：只換圖，文字層同其他內容原封不動
+    var info = PDFX.imageInfo(ctx, scan.ref);
+    var side = orig ? Infinity : PDF_RASTER_NORMAL;
+    var c = await PDFX.decodeImage(info, side);
+    var m = scan.ctm;
+    if (!c && m[1] === 0 && m[2] === 0 && m[0] > 0 && m[3] > 0){
+      var b = PDFX.bbox(m);
+      var want = Math.min(info.w || 2000, side);
+      var r = await renderPdfUnrotated(s, p.idx, function(){ return want / (b[2] - b[0]); });
+      var v = r.view;
+      var cx = (b[0] - v[0]) * r.scale, cy = (v[3] - b[3]) * r.scale;
+      c = newCanvas((b[2] - b[0]) * r.scale, (b[3] - b[1]) * r.scale);
+      c.getContext('2d').drawImage(r.canvas, -cx, -cy);
+      freeCanvas(r.canvas);
+    }
+    if (c){
+      var ac = adjustCanvas(c, p.adj);
+      freeCanvas(c);
+      var bytes = new Uint8Array(await (await canvasToBlob(ac, 'image/jpeg', q)).arrayBuffer());
+      var ref = PDFX.jpegXObject(ctx, bytes, ac.width, ac.height, false, info.smask);
+      freeCanvas(ac);
+      PDFX.replaceOnPage(pg, scan.name, ref);
+      return 'swap';
+    }
+  }
+  // 其他頁：保留原頁，喺上面疊一張調色圖
+  var L = orig ? PDF_RASTER_ORIGINAL : PDF_RASTER_NORMAL;
+  var rr = await renderPdfUnrotated(s, p.idx, function(vp1){ return L / Math.max(vp1.width, vp1.height); });
+  var oc = adjustCanvas(rr.canvas, p.adj);
+  freeCanvas(rr.canvas);
+  var emb = await out.embedJpg(await (await canvasToBlob(oc, 'image/jpeg', q)).arrayBuffer());
+  freeCanvas(oc);
+  PDFX.wrapContents(pg);
+  var cb = pg.getCropBox();
+  pg.drawImage(emb, { x: cb.x, y: cb.y, width: cb.width, height: cb.height });
+  return 'overlay';
+}
+
 /* ================= 匯入 ================= */
 function addPdf(f){
   var src;
@@ -1249,7 +1559,7 @@ async function buildPdf(list, onProgress){
   list.forEach(function(p){
     if (p.blank) return;
     var s = srcById(p.src);
-    if (s.kind !== 'pdf' || isAdjusted(p.adj)) return;
+    if (s.kind !== 'pdf') return;
     if (!per.has(s.id)) per.set(s.id, []);
     per.get(s.id).push(p.idx);
   });
@@ -1269,30 +1579,13 @@ async function buildPdf(list, onProgress){
       if (p.rot) pg.setRotation(degrees(p.rot));
     } else {
       var s = srcById(p.src);
-      if (s.kind === 'pdf' && isAdjusted(p.adj)){
-        // 調過色嘅 PDF 頁：轉做圖片
-        var ek = thumbKey(p);
-        var pe = imgCache.get(ek);
-        if (!pe){
-          var L = settings.quality === 'original' ? PDF_RASTER_ORIGINAL : PDF_RASTER_NORMAL;
-          var rc = await renderPdfCanvas(s, p.idx, L);
-          var ac = composeNatural(p, rc, L, p.adj);
-          freeCanvas(rc);
-          var jb = await canvasToBlob(ac, 'image/jpeg', settings.quality === 'original' ? 0.9 : 0.8);
-          freeCanvas(ac);
-          pe = await out.embedJpg(await jb.arrayBuffer());
-          imgCache.set(ek, pe);
-        }
-        var ns = naturalSize(p);
-        pg = out.addPage([ns[0], ns[1]]);
-        pg.drawImage(pe, { x: 0, y: 0, width: ns[0], height: ns[1] });
-        if (p.rot) pg.setRotation(degrees(p.rot));
-      } else if (s.kind === 'pdf'){
+      if (s.kind === 'pdf'){
         var c = copied.get(s.id);
         pg = c.pages[c.i++];
         out.addPage(pg);
         var base = norm(pg.getRotation().angle);
         pg.setRotation(degrees(norm(base + p.rot)));
+        if (isAdjusted(p.adj)) await adjustPdfPage(out, pg, s, p);
       } else {
         var ik = thumbKey(p);
         var emb = imgCache.get(ik);
@@ -1313,6 +1606,7 @@ async function buildPdf(list, onProgress){
   }
   onProgress(-1, list.length);
   await tick();
+  try { PDFX.collectGarbage(out); } catch (e) { console.warn(e); }
   return out.save({ useObjectStreams: true });
 }
 
@@ -1480,7 +1774,7 @@ function openAdj(){
   $('adjTitle').textContent = '調色 · ' + pages.length + ' 頁';
   var npdf = pages.filter(function(p){ return srcById(p.src).kind === 'pdf'; }).length;
   var warn = '';
-  if (npdf) warn = '有 ' + npdf + ' 頁係 PDF 頁，調色後會轉成圖片：入面文字唔再揀得或搜尋得，檔案亦會大啲。全部數值重設再套用，就會變返原本嘅 PDF 頁。';
+  if (npdf) warn = '有 ' + npdf + ' 頁係 PDF 頁：調色後文字層照樣保留，搜尋同揀字都得。掃描頁只會換走圖片；其他 PDF 頁會喺原頁上面疊一張調色圖，檔案會大啲。';
   if (skipped) warn += (warn ? '\n' : '') + '已略過 ' + skipped + ' 頁空白頁。';
   $('adjWarn').textContent = warn;
   $('adjIdx').textContent = pages.length > 1 ? '1 / ' + pages.length : '';
