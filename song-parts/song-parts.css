@@ -29,8 +29,15 @@
   .perfscreen #playerPanel{position:static;}
   body.has-bgimg::before{content:''; position:fixed; inset:0; background:rgba(15,16,20,.45); z-index:-1;}
   .wrap{max-width:860px; margin:0 auto; display:flex; flex-direction:column; gap:20px;}
-  .head{display:flex; justify-content:space-between; align-items:center;}
-  h1{font-size:1.05rem; font-weight:700; letter-spacing:.12em;}
+  .head{display:flex; justify-content:space-between; align-items:center; gap:10px;}
+  h1{font-size:1.05rem; font-weight:700; letter-spacing:.12em; white-space:nowrap;}
+  .headbtns{display:flex; gap:6px; flex-wrap:nowrap; justify-content:flex-end;}
+  .lbl-short{display:none;}
+  /* 防止任何內容撐闊頁面(iOS 會因此整頁縮小、右邊留白) */
+  .wrap{overflow-x:clip;}
+  .wrap, .page, .panel{min-width:0;}
+  .tablewrap{overflow-x:auto; -webkit-overflow-scrolling:touch; max-width:100%;}
+  .tablewrap table{min-width:100%;}
   h2{font-size:.78rem; font-weight:500; color:var(--muted); letter-spacing:.12em; margin-bottom:10px;}
   .mono{font-family:'Chivo Mono',monospace; font-variant-numeric:tabular-nums;}
   .panel{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px;
@@ -54,6 +61,7 @@
   /* player */
   .player{display:flex; flex-direction:column; gap:12px;}
   .player .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+  .player .skips{gap:8px;}
   video{width:100%; max-height:300px; border-radius:10px; background:#000; display:none;}
   video.show{display:block;}
   .timer{font-size:1.9rem; font-weight:300; margin-left:auto;}
@@ -223,6 +231,24 @@
   .stbar{height:8px; border-radius:4px; background:var(--c); min-width:2px;}
 
   @media (max-width:620px){
+    h1{font-size:.95rem; letter-spacing:.06em;}
+    .headbtns{gap:5px;}
+    .headbtns .btn{padding:5px 9px;}
+    .lbl-long{display:none;}
+    .lbl-short{display:inline;}
+    /* 置頂播放器壓縮,減少遮擋 */
+    .player{gap:8px; padding:10px 12px;}
+    .player .row{gap:6px; flex-wrap:nowrap;}
+    .player .btn{padding:7px 10px; font-size:.82rem; white-space:nowrap; flex:none;}
+    .player select{padding:6px 4px; font-size:.82rem; flex:none;}
+    #rateSel{width:58px; padding:6px 2px;}
+    .player .timer{min-width:0; overflow:hidden; text-overflow:clip;}
+    .player .ticks{margin-top:-6px;}
+    .player .skips .btn{flex:1 1 0; padding:5px 0; font-size:.76rem;}
+    .player .timer{font-size:1.05rem; white-space:nowrap;}
+    .player .timer small{font-size:.72rem;}
+    #markState{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0;}
+    #fileHint{display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;}
     .barrow{grid-template-columns:64px 1fr 58px;}
     .timer{font-size:1.4rem;}
     td input{width:66px;}

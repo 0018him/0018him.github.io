@@ -13,11 +13,11 @@
 <div class="wrap">
   <div class="head">
     <h1>歌唱分配計時</h1>
-    <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
-      <button class="btn small" id="undoBtn" disabled>↩ 復原</button>
-      <button class="btn small" id="redoBtn" disabled>↪ 重做</button>
+    <div class="headbtns">
+      <button class="btn small" id="undoBtn" disabled title="復原">↩&#xFE0E;<span class="lbl-long"> 復原</span></button>
+      <button class="btn small" id="redoBtn" disabled title="重做">↪&#xFE0E;<span class="lbl-long"> 重做</span></button>
       <button class="btn small" id="statsBtn">結算</button>
-      <button class="btn small" id="perfBtn">表演模式</button>
+      <button class="btn small" id="perfBtn">表演<span class="lbl-long">模式</span></button>
       <button class="btn small" id="themeBtn">外觀</button>
     </div>
   </div>
@@ -26,18 +26,20 @@
   <div class="panel player" id="playerPanel">
     <video id="media" playsinline></video>
     <div class="row">
-      <button class="btn" id="loadBtn">選擇音樂/影片檔</button>
+      <button class="btn" id="loadBtn">選擇<span class="lbl-long">音樂/影片</span>檔<span class="lbl-short">案</span></button>
       <button class="btn primary" id="playBtn" disabled>播放</button>
       <select id="rateSel" title="播放速度">
         <option value="0.5">0.5×</option>
         <option value="0.75">0.75×</option>
         <option value="1" selected>1×</option>
       </select>
+      <div class="timer mono"><span id="cur">00:00.0</span> <small id="dur">/ 00:00</small></div>
+    </div>
+    <div class="row skips">
       <button class="btn small" data-skip="-10">−10s</button>
       <button class="btn small" data-skip="-5">−5s</button>
       <button class="btn small" data-skip="5">＋5s</button>
       <button class="btn small" data-skip="10">＋10s</button>
-      <div class="timer mono"><span id="cur">00:00.0</span> <small id="dur">/ 00:00</small></div>
     </div>
     <input type="range" class="seek" id="seek" min="0" max="100" step="0.1" value="0" disabled>
     <div class="ticks" id="ticks"></div>
@@ -46,7 +48,7 @@
       <button class="btn" id="markBtn" disabled>▶ 由此刻開始標記</button>
       <span class="filehint" id="markState"></span>
     </div>
-    <div class="filehint" id="fileHint">支援 mp3 等音檔及 mp4 等影片。音檔會隨「儲存歌曲」一併保存在此裝置。</div>
+    <div class="filehint" id="fileHint">支援 mp3 / m4a 音檔及 mp4 影片</div>
   </div>
 
   <div class="tabs">
@@ -94,10 +96,10 @@
     <div class="panel collapsible" data-ckey="seg">
       <div class="chead"><h2>段落分配</h2><button class="tbtn ctoggle">收起</button></div>
       <div class="cbody">
-      <table>
+      <div class="tablewrap"><table>
         <thead><tr><th>成員</th><th>開始</th><th>結束</th><th>歌詞</th><th></th><th></th></tr></thead>
         <tbody id="segBody"></tbody>
-      </table>
+      </table></div>
       <div class="quick" style="margin:12px 0 0">
         <span class="filehint">複製段落:</span>
         由 <input type="text" id="scFrom" class="mono" style="width:74px" placeholder="0:00.0">
@@ -143,10 +145,10 @@
       <div class="chead"><h2>走位圖層</h2><button class="tbtn ctoggle">收起</button></div>
       <div class="cbody">
       <div class="layer-chips" id="layerChips"></div>
-      <table>
+      <div class="tablewrap"><table>
         <thead><tr><th>成員</th><th>時間</th><th>格(左右)</th><th>排(前後)</th><th></th></tr></thead>
         <tbody id="formBody"></tbody>
-      </table>
+      </table></div>
       <div class="quick" style="margin:12px 0 0">
         <span class="filehint">複製走位(依上方成員篩選):</span>
         由 <input type="text" id="fcFrom" class="mono" style="width:74px" placeholder="0:00.0">
