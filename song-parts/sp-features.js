@@ -5,7 +5,7 @@ let currentSongId=null;
 function snapshot(){
   return JSON.parse(JSON.stringify({
     members:data.members, segments:data.segments, formations:data.formations,
-    theme:{bg:data.theme.bg}
+    order:data.order, theme:{bg:data.theme.bg}
   }));
 }
 async function saveThemeImg(id){
@@ -25,7 +25,7 @@ document.getElementById('saveNewBtn').onclick=async ()=>{
 async function loadSong(id, autoplay){
   const s=lib.songs.find(x=>x.id===id); if(!s) return false;
   const sn=normalizeData(JSON.parse(JSON.stringify(s.snap)));
-  data.members=sn.members; data.segments=sn.segments; data.formations=sn.formations;
+  data.members=sn.members; data.segments=sn.segments; data.formations=sn.formations; data.order=sn.order;
   if(sn.theme && sn.theme.bg) data.theme.bg=sn.theme.bg;
   try{
     const bg=await idb.get('bg-'+id);
@@ -157,7 +157,7 @@ function renderPlaylist(){
 /* ================= export / import ================= */
 document.getElementById('exportBtn').onclick=()=>{
   const payload={ app:'song-parts', ver:5, exportedAt:new Date().toISOString(),
-    data:{members:data.members,segments:data.segments,formations:data.formations,theme:data.theme},
+    data:{members:data.members,segments:data.segments,formations:data.formations,order:data.order,theme:data.theme},
     lib };
   const blob=new Blob([JSON.stringify(payload)],{type:'application/json'});
   const a=document.createElement('a');
@@ -285,7 +285,7 @@ async function saveCurrentPlan(){
 }
 function resetPlan(){
   data.members=Array.from({length:7},(_,i)=>({name:`成員 ${i+1}`,img:null,color:PALETTE[i%14]}));
-  data.segments=[]; data.formations=[];
+  data.segments=[]; data.formations=[]; data.order=[]; fixOrder(data);
   data.theme={bg:'#1b1d22',img:null};
   currentSongId=null; plPos=null; curBlob=null;
   media.pause(); media.removeAttribute('src'); media.load();

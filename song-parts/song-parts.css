@@ -76,7 +76,14 @@
   .members-head h2{margin:0;}
   .count{display:flex; gap:6px; align-items:center; font-size:.8rem; color:var(--muted);}
   .members{display:grid; gap:10px;}
-  .member{display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer;}
+  .member{display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer;
+    user-select:none; -webkit-user-select:none; -webkit-touch-callout:none;}
+  .member img{-webkit-user-drag:none; pointer-events:none;}
+  .member.dragging{opacity:.3;}
+  .member.over .avatar{outline:2px dashed var(--text); outline-offset:2px;}
+  .mghost{position:fixed; z-index:999; pointer-events:none; opacity:.92;
+    transform:scale(1.08); filter:drop-shadow(0 10px 18px rgba(0,0,0,.45));}
+  .mghost .avatar{filter:none;}
   .avatar{width:100%; aspect-ratio:3/4; border-radius:10px;
     background:rgba(127,127,127,.15); border:3px solid var(--line);
     filter:grayscale(60%) brightness(.55);

@@ -32,7 +32,16 @@ function normalizeData(d){
   d.members.forEach((m,i)=>{ m.color = m.color||PALETTE[i%14]; });
   d.segments = d.segments.filter(g=>g.m<d.members.length);
   d.formations = d.formations.filter(f=>f.m<d.members.length);
+  fixOrder(d);
   return d;
+}
+/* 歌詞分配頁的成員顯示次序(只影響頭像、bar、選單排列;不改成員編號,站位動線不受影響) */
+function fixOrder(d){
+  const n=d.members.length;
+  const seen=new Set();
+  d.order=(Array.isArray(d.order)?d.order:[]).filter(i=>Number.isInteger(i)&&i>=0&&i<n&&!seen.has(i)&&seen.add(i));
+  for(let i=0;i<n;i++) if(!seen.has(i)) d.order.push(i);
+  return d.order;
 }
 normalizeData(data);
 
@@ -47,13 +56,14 @@ function cloneState(){
   return {
     members:data.members.map(m=>({name:m.name,color:m.color,img:m.img})),
     segments:data.segments.map(g=>({...g})),
-    formations:data.formations.map(f=>({...f}))
+    formations:data.formations.map(f=>({...f})),
+    order:data.order.slice()
   };
 }
 function stateKey(st){
   return JSON.stringify({
     m:st.members.map(x=>[x.name,x.color,x.img?x.img.length:0]),
-    s:st.segments, f:st.formations });
+    s:st.segments, f:st.formations, o:st.order });
 }
 function recordHistory(){
   const st=cloneState(), key=stateKey(st);
@@ -68,6 +78,7 @@ function applyState(st){
   data.members=st.members.map(m=>({...m}));
   data.segments=st.segments.map(g=>({...g}));
   data.formations=st.formations.map(f=>({...f}));
+  data.order=(st.order||[]).slice(); fixOrder(data);
   histMute=true; persist(); histMute=false;
   renderAll(); renderTicks(); forceRefreshPositions();
   updateUndoBtns();

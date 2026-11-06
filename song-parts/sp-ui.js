@@ -11,13 +11,14 @@ const membersEl=document.getElementById('members');
 function renderMembers(){
   membersEl.style.gridTemplateColumns=`repeat(${N()},1fr)`;
   membersEl.innerHTML='';
-  data.members.forEach((m,i)=>{
+  fixOrder(data).forEach(i=>{
+    const m=data.members[i];
     const d=document.createElement('div');
     d.className='member'; d.dataset.i=i;
     d.style.setProperty('--c',m.color);
-    d.innerHTML=`<div class="avatar">${m.img?`<img src="${m.img}" alt="">`:'♪'}</div>
+    d.innerHTML=`<div class="avatar">${m.img?`<img src="${m.img}" alt="" draggable="false">`:'♪'}</div>
       <div class="mname">${esc(m.name)}</div>`;
-    d.onclick=()=>openMember(i);
+    d.onclick=()=>{ if(memSuppressClick){ memSuppressClick=false; return; } openMember(i); };
     membersEl.appendChild(d);
   });
   document.getElementById('memCount').textContent=N();
@@ -25,7 +26,7 @@ function renderMembers(){
 document.getElementById('memPlus').onclick=()=>{
   if(N()>=MAX_N) return;
   data.members.push({name:`成員 ${N()+1}`,img:null,color:PALETTE[N()%14]});
-  persist(); renderAll();
+  fixOrder(data); persist(); renderAll();
 };
 document.getElementById('memMinus').onclick=()=>{
   if(N()<=MIN_N) return;
@@ -35,8 +36,67 @@ document.getElementById('memMinus').onclick=()=>{
   data.members.pop();
   data.segments=data.segments.filter(g=>g.m<N());
   data.formations=data.formations.filter(f=>f.m<N());
-  persist(); renderAll();
+  fixOrder(data); persist(); renderAll();
 };
+
+/* ---- 長按頭像拖動,放到另一頭像上即交換次序 ---- */
+let memSuppressClick=false, mDown=null, mDrag=null, mTimer=null;
+membersEl.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('touchmove',e=>{ if(mDrag) e.preventDefault(); },{passive:false});
+membersEl.addEventListener('pointerdown',e=>{
+  const el=e.target.closest('.member'); if(!el) return;
+  mDown={el,x:e.clientX,y:e.clientY};
+  clearTimeout(mTimer);
+  mTimer=setTimeout(()=>{
+    if(!mDown) return;
+    const r=el.getBoundingClientRect();
+    const ghost=el.cloneNode(true);
+    ghost.classList.add('mghost');
+    ghost.style.width=r.width+'px'; ghost.style.height=r.height+'px';
+    ghost.style.left=r.left+'px'; ghost.style.top=r.top+'px';
+    document.body.appendChild(ghost);
+    el.classList.add('dragging');
+    mDrag={el,ghost,dx:mDown.x-r.left,dy:mDown.y-r.top};
+    if(navigator.vibrate) navigator.vibrate(25);
+  },350);
+});
+function memTargetAt(x,y){
+  const t=document.elementFromPoint(x,y)?.closest('.member');
+  return (t && membersEl.contains(t))? t : null;
+}
+document.addEventListener('pointermove',e=>{
+  if(mDown && !mDrag && Math.hypot(e.clientX-mDown.x,e.clientY-mDown.y)>8){
+    clearTimeout(mTimer); mDown=null;            /* 移動太早=捲動,取消長按 */
+  }
+  if(!mDrag) return;
+  mDrag.ghost.style.left=(e.clientX-mDrag.dx)+'px';
+  mDrag.ghost.style.top=(e.clientY-mDrag.dy)+'px';
+  membersEl.querySelectorAll('.member.over').forEach(x=>x.classList.remove('over'));
+  const t=memTargetAt(e.clientX,e.clientY);
+  if(t && t!==mDrag.el) t.classList.add('over');
+});
+function endMemDrag(x,y){
+  const t=(x!=null)? memTargetAt(x,y) : null;
+  if(t && t!==mDrag.el){
+    const a=data.order.indexOf(+mDrag.el.dataset.i), b=data.order.indexOf(+t.dataset.i);
+    [data.order[a],data.order[b]]=[data.order[b],data.order[a]];
+    persist();
+  }
+  mDrag.ghost.remove();
+  memSuppressClick=true; setTimeout(()=>{ memSuppressClick=false; },400);
+  mDrag=null;
+  renderMembers(); renderBars(); renderQuickSelect();
+}
+document.addEventListener('pointerup',e=>{
+  clearTimeout(mTimer);
+  if(mDrag) endMemDrag(e.clientX,e.clientY);
+  mDown=null;
+});
+document.addEventListener('pointercancel',()=>{
+  clearTimeout(mTimer);
+  if(mDrag) endMemDrag(null,null);
+  mDown=null;
+});
 
 let photoTarget=null;
 const photoInput=makeInput('image/*', f=>{
@@ -87,9 +147,10 @@ function renderBars(){
   barsEl.style.height=(N()*31-9)+'px';
   data.members.forEach((m,i)=>{
     const r=document.createElement('div');
-    r.className='barrow'; r.dataset.i=i; r.dataset.rank=i;
+    const pos=fixOrder(data).indexOf(i);
+    r.className='barrow'; r.dataset.i=i; r.dataset.rank=pos;
     r.style.setProperty('--c',m.color);
-    r.style.top=(i*31)+'px';
+    r.style.top=(pos*31)+'px';
     r.innerHTML=`<div class="bname">${esc(m.name)}</div>
       <div class="track"><div class="fill"></div></div>
       <div class="bval mono">0.0s</div>`;
@@ -381,8 +442,11 @@ function frame(){
   if(mediaReady && !seek.matches(':active')) seek.value=t;
   const maxTotal=Math.max(1,...data.members.map((_,i)=>totalOf(i)));
   const vals=data.members.map((_,i)=>sungUpTo(i,t));
-  const order=data.members.map((_,i)=>i);
-  if(data.rankMode) order.sort((a,b)=> vals[b]-vals[a] || a-b);
+  const order=data.order.slice();
+  if(data.rankMode){
+    const pos=i=>data.order.indexOf(i);
+    order.sort((a,b)=> vals[b]-vals[a] || pos(a)-pos(b));
+  }
   document.querySelectorAll('.barrow').forEach(r=>{
     const i=+r.dataset.i, v=vals[i];
     r.querySelector('.fill').style.width=(v/maxTotal*100)+'%';
@@ -412,8 +476,10 @@ const markBtn=document.getElementById('markBtn');
 const markState=document.getElementById('markState');
 let marking=null;
 function renderQuickSelect(){
-  quickMember.innerHTML=data.members.map((m,i)=>
-    `<option value="${i}">${esc(m.name)}</option>`).join('');
+  const keep=quickMember.value;
+  quickMember.innerHTML=fixOrder(data).map(i=>
+    `<option value="${i}">${esc(data.members[i].name)}</option>`).join('');
+  if(keep!=='' && data.members[+keep]) quickMember.value=keep;
 }
 markBtn.onclick=()=>{
   const t=media.currentTime;
