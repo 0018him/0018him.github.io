@@ -22,6 +22,15 @@ let data = safeGet('lineDist2') || {
   members: Array.from({length:7},(_,i)=>({name:`成員 ${i+1}`,img:null,color:PALETTE[i%14]})),
   segments: [], theme:{bg:'#1b1d22',img:null}
 };
+/* 圖片(成員照+背景)另存一個鍵,只在圖片真正改變時才寫入;
+   舊版把圖片內嵌在 lineDist2,載入時照樣讀得到 */
+(function mergeImages(){
+  const im=safeGet('lineDist2img');
+  if(!im) return;
+  (data.members||[]).forEach((m,i)=>{ if(im.members && im.members[i]!==undefined) m.img=im.members[i]; });
+  data.theme=data.theme||{bg:'#1b1d22',img:null};
+  if(im.bg!==undefined) data.theme.img=im.bg;
+})();
 function normalizeData(d){
   d.formations = (d.formations||[]).map(f=>
     f.col!=null ? f : {t:f.t, m:f.m, col:f.slot??0, row:ROWS-1});
@@ -90,7 +99,29 @@ function updateUndoBtns(){
   if(u) u.disabled = histI<=0;
   if(r) r.disabled = histI>=hist.length-1;
 }
-function persist(){ safeSet('lineDist2', data); if(!histMute) recordHistory(); }
+/* 儲存:歷史即時記錄;寫入 localStorage 延後合併執行,讓按鈕先反應 */
+let saveTimer=null, lastImgSig=null;
+const imgSig = s => s ? s.length+':'+s.slice(-24) : '';
+function writeNow(){
+  clearTimeout(saveTimer); saveTimer=null;
+  const slim={...data,
+    members:data.members.map(m=>({name:m.name,color:m.color})),
+    theme:{...data.theme, img:null}};
+  safeSet('lineDist2', slim);
+  const sig=data.members.map(m=>imgSig(m.img)).join('|')+'#'+imgSig(data.theme.img);
+  if(sig!==lastImgSig){
+    safeSet('lineDist2img', {members:data.members.map(m=>m.img||null), bg:data.theme.img||null});
+    lastImgSig=sig;
+  }
+}
+function persist(){
+  if(!histMute) recordHistory();
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(writeNow, 300);
+}
+/* 離開或切到背景前立即寫入,避免遺失最後的修改 */
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden' && saveTimer) writeNow(); });
+window.addEventListener('pagehide',()=>{ if(saveTimer) writeNow(); });
 function persistLib(){ safeSet('lineDistLib1', lib); }
 const N = ()=> data.members.length;
 

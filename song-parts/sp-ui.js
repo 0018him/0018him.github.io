@@ -488,14 +488,16 @@ markBtn.onclick=()=>{
     markBtn.textContent='■ 結束標記';
     markState.textContent=`${data.members[marking.m].name} 由 ${fmtT(t)} 開始…`;
   } else {
-    if(t>marking.s+0.2){
+    const added = t>marking.s+0.2;
+    if(added){
       data.segments.push({m:marking.m,s:+marking.s.toFixed(1),e:+t.toFixed(1)});
       data.segments.sort((a,b)=>a.s-b.s);
-      persist(); renderSegs();
     }
     marking=null;
     markBtn.textContent='▶ 由此刻開始標記';
     markState.textContent='';
+    /* 先讓按鈕畫面更新,再重建表格與儲存 */
+    if(added) requestAnimationFrame(()=>setTimeout(()=>{ persist(); renderSegs(); },0));
   }
 };
 function renderSegs(){
