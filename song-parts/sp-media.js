@@ -3,10 +3,10 @@
 const media=document.getElementById('media');
 const playBtn=document.getElementById('playBtn');
 const seek=document.getElementById('seek');
-let mediaReady=false, mediaUrl=null, curBlob=null, pendingAutoplay=false;
+let mediaReady=false, mediaUrl=null, curBlob=null, curName='', pendingAutoplay=false;
 
 function setMediaBlob(blob, name, autoplay){
-  curBlob=blob;
+  curBlob=blob; curName=name||'';
   if(mediaUrl) URL.revokeObjectURL(mediaUrl);
   mediaUrl=URL.createObjectURL(blob);
   mediaReady=false; pendingAutoplay=!!autoplay;

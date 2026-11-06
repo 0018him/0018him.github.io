@@ -20,7 +20,7 @@ document.getElementById('saveNewBtn').onclick=async ()=>{
   currentSongId=id;
   persistLib(); renderSongs(); renderPlaylist();
   await saveThemeImg(id);
-  if(curBlob){ try{ await idb.put(id, curBlob); }catch(e){ alert('音檔儲存失敗(裝置空間不足?),標註已保存。'); } }
+  if(curBlob){ try{ await saveAudio(id, curBlob, curName); }catch(e){ alert(audioSaveErrorMsg(e)); } }
 };
 async function loadSong(id, autoplay){
   const s=lib.songs.find(x=>x.id===id); if(!s) return false;
@@ -34,7 +34,7 @@ async function loadSong(id, autoplay){
   currentSongId=id;
   persist(); applyTheme(); renderAll();
   try{
-    const blob=await idb.get(id);
+    const blob=await loadAudio(id);
     if(blob){ setMediaBlob(blob, s.name+'(儲存庫音檔)', autoplay); return true; }
   }catch(e){}
   document.getElementById('fileHint').textContent=
@@ -61,7 +61,7 @@ function renderSongs(){
       if(!confirm(`用目前內容覆蓋「${s.name}」?`)) return;
       s.snap=snapshot(); currentSongId=s.id; persistLib();
       await saveThemeImg(s.id);
-      if(curBlob){ try{ await idb.put(s.id, curBlob); }catch(e){} }
+      if(curBlob){ try{ await saveAudio(s.id, curBlob, curName); }catch(e){ alert(audioSaveErrorMsg(e)); } }
     };
     d.querySelector('[data-f=ren]').onclick=()=>{
       const nn=prompt('歌曲名稱:',s.name);
@@ -274,12 +274,12 @@ async function saveCurrentPlan(){
     const s=lib.songs.find(x=>x.id===currentSongId);
     s.snap=snapshot(); persistLib();
     await saveThemeImg(s.id);
-    if(curBlob){ try{ await idb.put(s.id,curBlob); }catch(e){} }
+    if(curBlob){ try{ await saveAudio(s.id,curBlob,curName); }catch(e){ alert(audioSaveErrorMsg(e)); } }
   } else {
     const id=Date.now();
     lib.songs.push({id, name:`歌曲 ${lib.songs.length+1}`, snap:snapshot()});
     persistLib(); await saveThemeImg(id);
-    if(curBlob){ try{ await idb.put(id,curBlob); }catch(e){} }
+    if(curBlob){ try{ await saveAudio(id,curBlob,curName); }catch(e){ alert(audioSaveErrorMsg(e)); } }
   }
   renderSongs(); renderPlaylist();
 }

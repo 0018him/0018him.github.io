@@ -96,7 +96,8 @@ const idb = {
   async put(k,v){ const db=await this.open(); return new Promise((res,rej)=>{
     const tx=db.transaction('audio','readwrite');
     tx.objectStore('audio').put(v,k);
-    tx.oncomplete=res; tx.onerror=()=>rej(tx.error); });},
+    tx.oncomplete=res; tx.onerror=()=>rej(tx.error);
+    tx.onabort=()=>rej(tx.error||new Error('transaction aborted')); });},
   async get(k){ const db=await this.open(); return new Promise((res,rej)=>{
     const rq=db.transaction('audio').objectStore('audio').get(k);
     rq.onsuccess=()=>res(rq.result||null); rq.onerror=()=>rej(rq.error); });},
@@ -105,6 +106,33 @@ const idb = {
     tx.objectStore('audio').delete(k);
     tx.oncomplete=res; tx.onerror=()=>rej(tx.error); });}
 };
+/* 音檔存取:改存 ArrayBuffer,避開 iOS WebKit「Error preparing Blob/File」問題
+   (無痕/私密瀏覽最常觸發;舊版以 Blob 存的資料照樣讀得返) */
+const AUDIO_TYPES={mp3:'audio/mpeg',m4a:'audio/mp4',aac:'audio/aac',wav:'audio/wav',
+  ogg:'audio/ogg',mp4:'video/mp4',mov:'video/quicktime',webm:'video/webm'};
+function guessType(blob,name){
+  if(blob && blob.type) return blob.type;
+  const ext=String(name||'').split('.').pop().toLowerCase();
+  return AUDIO_TYPES[ext]||'';
+}
+async function saveAudio(key, blob, name){
+  const buf=await blob.arrayBuffer();          /* 讀檔失敗(如 iCloud 檔未下載)會在此拋錯 */
+  await idb.put(key, {buf, type:guessType(blob,name), name:name||''});
+}
+async function loadAudio(key){
+  const v=await idb.get(key);
+  if(!v) return null;
+  if(v instanceof Blob) return v;
+  if(v.buf) return new Blob([v.buf], {type:v.type||''});
+  return null;
+}
+function audioSaveErrorMsg(e){
+  const n=(e&&e.name)||'';
+  if(n==='QuotaExceededError') return '音檔儲存失敗:裝置儲存空間不足。標註已保存。';
+  if(n==='NotReadableError'||n==='NotFoundError')
+    return '音檔儲存失敗:無法讀取原檔(若檔案在 iCloud,請先在「檔案」App 下載到本機再選擇)。標註已保存。';
+  return `音檔儲存失敗(${n||'未知錯誤'})。如正使用無痕/私密瀏覽,請改用一般模式。標註已保存。`;
+}
 /* 要求持久儲存,降低 iOS 自動清理風險 */
 if(navigator.storage && navigator.storage.persist) navigator.storage.persist();
 
