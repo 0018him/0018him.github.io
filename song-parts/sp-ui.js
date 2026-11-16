@@ -33,6 +33,7 @@ document.getElementById('memMinus').onclick=()=>{
   const gone=N()-1;
   const used=data.segments.some(g=>g.m===gone)||data.formations.some(f=>f.m===gone);
   if(used && !confirm(`「${data.members[gone].name}」已有標記,一併刪除?`)) return;
+  activeMarks.delete(gone);
   data.members.pop();
   data.segments=data.segments.filter(g=>g.m<N());
   data.formations=data.formations.filter(f=>f.m<N());
@@ -85,7 +86,7 @@ function endMemDrag(x,y){
   mDrag.ghost.remove();
   memSuppressClick=true; setTimeout(()=>{ memSuppressClick=false; },400);
   mDrag=null;
-  renderMembers(); renderBars(); renderQuickSelect();
+  renderMembers(); renderBars(); renderMarkButtons();
 }
 document.addEventListener('pointerup',e=>{
   clearTimeout(mTimer);
@@ -234,7 +235,7 @@ function updateStageAndTopview(t){
       el.dataset.key=key;
     }
     el.style.zIndex=10+row;
-    el.classList.toggle('active', isActive(i,t));
+    el.classList.toggle('active', activeMarks.has(i) || isActive(i,t));
   });
   tvPeople.querySelectorAll('.tvm').forEach(el=>{
     const i=+el.dataset.i, {col,row}=poses[i];
@@ -247,7 +248,7 @@ function updateStageAndTopview(t){
       el.dataset.pos=key;
     }
     el.style.zIndex=10+row;
-    el.classList.toggle('active', isActive(i,t));
+    el.classList.toggle('active', activeMarks.has(i) || isActive(i,t));
   });
 }
 
@@ -435,13 +436,15 @@ function renderForm(){
 }
 
 /* ================= live loop ================= */
-let lastLyricHTML=null;
+let lastLyricHTML=null, lastRenderedMediaTime=0;
 function frame(){
   const t=media.currentTime||0;
+  if(!media.seeking) lastRenderedMediaTime=t;
   document.getElementById('cur').textContent=fmtT(t);
   if(mediaReady && !seek.matches(':active')) seek.value=t;
-  const maxTotal=Math.max(1,...data.members.map((_,i)=>totalOf(i)));
-  const vals=data.members.map((_,i)=>sungUpTo(i,t));
+  const vals=data.members.map((_,i)=>sungUpTo(i,t)+
+    (activeMarks.has(i)?Math.max(0,t-activeMarks.get(i)):0));
+  const maxTotal=Math.max(1,...vals);
   const order=data.order.slice();
   if(data.rankMode){
     const pos=i=>data.order.indexOf(i);
@@ -451,7 +454,7 @@ function frame(){
     const i=+r.dataset.i, v=vals[i];
     r.querySelector('.fill').style.width=(v/maxTotal*100)+'%';
     r.querySelector('.bval').textContent=v.toFixed(1)+'s';
-    r.classList.toggle('active',isActive(i,t));
+    r.classList.toggle('active',activeMarks.has(i) || isActive(i,t));
     const rank=order.indexOf(i);
     if(+r.dataset.rank!==rank){ r.style.top=(rank*31)+'px'; r.dataset.rank=rank; }
   });
@@ -463,7 +466,7 @@ function frame(){
   if(nextSeg) ly+=`<div class="lyric-next" style="color:${data.members[nextSeg.m].color}">${esc(nextSeg.lyric)}</div>`;
   if(ly!==lastLyricHTML){ document.getElementById('lyricBox').innerHTML=ly; lastLyricHTML=ly; }
   document.querySelectorAll('.member').forEach(d=>
-    d.classList.toggle('active',isActive(+d.dataset.i,t)));
+    d.classList.toggle('active',activeMarks.has(+d.dataset.i) || isActive(+d.dataset.i,t)));
   updateStageAndTopview(t);
   requestAnimationFrame(frame);
 }
@@ -471,35 +474,67 @@ requestAnimationFrame(frame);
 
 /* ================= segments (page1) ================= */
 const segBody=document.getElementById('segBody');
-const quickMember=document.getElementById('quickMember');
-const markBtn=document.getElementById('markBtn');
+const markButtonsEl=document.getElementById('markButtons');
 const markState=document.getElementById('markState');
-let marking=null;
-function renderQuickSelect(){
-  const keep=quickMember.value;
-  quickMember.innerHTML=fixOrder(data).map(i=>
-    `<option value="${i}">${esc(data.members[i].name)}</option>`).join('');
-  if(keep!=='' && data.members[+keep]) quickMember.value=keep;
+const activeMarks=new Map(); // member index -> start time (song position)
+
+function renderMarkButtons(){
+  markButtonsEl.style.gridTemplateColumns=`repeat(${N()},minmax(0,1fr))`;
+  markButtonsEl.innerHTML=fixOrder(data).map(i=>{
+    const m=data.members[i], recording=activeMarks.has(i);
+    const action=recording?'暫停標記':'開始標記';
+    return `<button type="button" class="mark-member ${recording?'is-recording':''}"
+      style="--c:${m.color}" data-i="${i}" aria-pressed="${recording}"
+      aria-label="${esc(m.name)}：${action}" title="${esc(m.name)}：${action}"
+      ${mediaReady?'':'disabled'}>
+      <span class="mark-icon" aria-hidden="true">${recording?'■':'▶'}</span>
+      <span class="mark-name">${esc(m.name)}</span>
+    </button>`;
+  }).join('');
+  markState.textContent=activeMarks.size?`${activeMarks.size} 位記錄中`:'';
 }
-markBtn.onclick=()=>{
-  const t=media.currentTime;
-  if(!marking){
-    marking={m:+quickMember.value,s:t};
-    markBtn.textContent='■ 結束標記';
-    markState.textContent=`${data.members[marking.m].name} 由 ${fmtT(t)} 開始…`;
+function finishMark(i,t){
+  const s=activeMarks.get(i);
+  if(s===undefined) return false;
+  activeMarks.delete(i);
+  const e=Math.floor(Math.max(0,t)*10)/10;
+  if(e<=s || !data.members[i]) return false;
+  data.segments.push({m:i,s,e});
+  return true;
+}
+function saveFinishedMarks(changed){
+  if(!changed) return;
+  data.segments.sort((a,b)=>a.s-b.s);
+  persist();
+  renderSegs();
+}
+function stopAllMarks(t=nowT()){
+  let changed=false;
+  for(const i of [...activeMarks.keys()]) changed=finishMark(i,t)||changed;
+  renderMarkButtons();
+  saveFinishedMarks(changed);
+}
+function discardAllMarks(){
+  activeMarks.clear();
+  renderMarkButtons();
+}
+markButtonsEl.addEventListener('click',e=>{
+  const btn=e.target.closest('.mark-member');
+  if(!btn || btn.disabled || !mediaReady) return;
+  const i=+btn.dataset.i, t=nowT();
+  if(activeMarks.has(i)){
+    const changed=finishMark(i,t);
+    renderMarkButtons();
+    saveFinishedMarks(changed);
   } else {
-    const added = t>marking.s+0.2;
-    if(added){
-      data.segments.push({m:marking.m,s:+marking.s.toFixed(1),e:+t.toFixed(1)});
-      data.segments.sort((a,b)=>a.s-b.s);
-    }
-    marking=null;
-    markBtn.textContent='▶ 由此刻開始標記';
-    markState.textContent='';
-    /* 先讓按鈕畫面更新,再重建表格與儲存 */
-    if(added) requestAnimationFrame(()=>setTimeout(()=>{ persist(); renderSegs(); },0));
+    activeMarks.set(i,t);
+    renderMarkButtons();
   }
-};
+});
+// Seeking while recording should not include the skipped portion of the song.
+media.addEventListener('seeking',()=>{
+  if(activeMarks.size) stopAllMarks(lastRenderedMediaTime);
+});
 function renderSegs(){
   segBody.innerHTML='';
   data.segments.forEach((g,gi)=>{
@@ -533,7 +568,7 @@ function renderSegs(){
   tr.innerHTML=`<td colspan="6"><button class="tbtn" id="addSeg">＋ 手動新增段落</button></td>`;
   tr.querySelector('#addSeg').onclick=()=>{
     const t=+(media.currentTime||0).toFixed(1);
-    data.segments.push({m:+quickMember.value,s:t,e:t+5});
+    data.segments.push({m:fixOrder(data)[0],s:t,e:t+5});
     persist(); renderSegs();
   };
   segBody.appendChild(tr);

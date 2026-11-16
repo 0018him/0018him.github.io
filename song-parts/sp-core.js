@@ -84,6 +84,7 @@ function recordHistory(){
   updateUndoBtns();
 }
 function applyState(st){
+  discardAllMarks();
   data.members=st.members.map(m=>({...m}));
   data.segments=st.segments.map(g=>({...g}));
   data.formations=st.formations.map(f=>({...f}));

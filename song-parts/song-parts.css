@@ -71,6 +71,24 @@
   .tick{position:absolute; top:0; width:3px; height:8px; border-radius:2px; cursor:pointer;}
   .filehint{font-size:.72rem; color:var(--muted);}
 
+  /* Square record buttons follow the member avatar order. */
+  .mark-panel{display:flex; flex-direction:column; gap:8px;}
+  .mark-header{display:flex; align-items:center; justify-content:space-between; gap:8px;}
+  .mark-grid{display:grid; gap:10px;}
+  .mark-member{min-width:0; aspect-ratio:1; padding:6px 3px; border-radius:10px;
+    border:2px solid var(--line); background:rgba(127,127,127,.1); color:var(--text);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+    cursor:pointer; font-family:inherit; touch-action:manipulation;
+    transition:border-color .15s,box-shadow .15s,background .15s;}
+  .mark-member .mark-icon{font-size:1.15rem; line-height:1;}
+  .mark-member .mark-name{font-size:.66rem; max-width:100%; overflow:hidden;
+    text-overflow:ellipsis; white-space:nowrap;}
+  .mark-member.is-recording{border-color:var(--c); background:rgba(127,127,127,.22);
+    box-shadow:inset 0 0 0 1px var(--c),0 0 12px var(--c);}
+  .mark-member.is-recording .mark-icon{color:var(--c);}
+  .mark-member:disabled{opacity:.4; cursor:default;}
+  .mark-member:focus-visible{outline:2px solid var(--text);outline-offset:2px;}
+
   /* members (page1) */
   .members-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;}
   .members-head h2{margin:0;}
@@ -255,6 +273,10 @@
     .player .timer{font-size:1.05rem; white-space:nowrap;}
     .player .timer small{font-size:.72rem;}
     #markState{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0;}
+    .mark-grid{gap:6px;}
+    .mark-member{padding:4px 2px; gap:4px; border-radius:8px;}
+    .mark-member .mark-icon{font-size:1rem;}
+    .mark-member .mark-name{font-size:.6rem;}
     #fileHint{display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;}
     .barrow{grid-template-columns:64px 1fr 58px;}
     .timer{font-size:1.4rem;}

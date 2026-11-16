@@ -24,6 +24,7 @@ document.getElementById('saveNewBtn').onclick=async ()=>{
 };
 async function loadSong(id, autoplay){
   const s=lib.songs.find(x=>x.id===id); if(!s) return false;
+  stopAllMarks(nowT());
   const sn=normalizeData(JSON.parse(JSON.stringify(s.snap)));
   data.members=sn.members; data.segments=sn.segments; data.formations=sn.formations; data.order=sn.order;
   if(sn.theme && sn.theme.bg) data.theme.bg=sn.theme.bg;
@@ -156,6 +157,7 @@ function renderPlaylist(){
 
 /* ================= export / import ================= */
 document.getElementById('exportBtn').onclick=()=>{
+  stopAllMarks(nowT());
   const payload={ app:'song-parts', ver:5, exportedAt:new Date().toISOString(),
     data:{members:data.members,segments:data.segments,formations:data.formations,order:data.order,theme:data.theme},
     lib };
@@ -172,7 +174,8 @@ const importInput=makeInput('.json,application/json', f=>{
       const o=JSON.parse(txt);
       if(o.app!=='song-parts' || !o.data) throw new Error('bad');
       if(!confirm('匯入將取代目前所有標註、成員與歌曲庫(音檔不受影響),繼續?')) return;
-      data=normalizeData(o.data);
+      discardAllMarks();
+       data=normalizeData(o.data);
       lib=o.lib||{songs:[]};
       lib.playlist=lib.playlist||{ids:[],mode:'single-stop'};
       lib.playlist.ids=lib.playlist.ids.filter(id=>lib.songs.some(s=>s.id===id));
@@ -208,7 +211,9 @@ document.getElementById('perfExit').onclick=()=>{
 
 /* ================= stats summary ================= */
 function showStats(){
-  const totals=data.members.map((m,i)=>({m,v:totalOf(i)}));
+  const t=nowT();
+  const totals=data.members.map((m,i)=>({m,v:totalOf(i)+
+    (activeMarks.has(i)?Math.max(0,t-activeMarks.get(i)):0)}));
   const sum=totals.reduce((a,b)=>a+b.v,0)||1;
   const max=Math.max(1,...totals.map(x=>x.v));
   totals.sort((a,b)=>b.v-a.v);
@@ -270,6 +275,7 @@ document.getElementById('npBack').onclick=()=> newOverlay.classList.remove('open
 newOverlay.addEventListener('click',e=>{ if(e.target===newOverlay) newOverlay.classList.remove('open'); });
 
 async function saveCurrentPlan(){
+  stopAllMarks(nowT());
   if(currentSongId && lib.songs.some(s=>s.id===currentSongId)){
     const s=lib.songs.find(x=>x.id===currentSongId);
     s.snap=snapshot(); persistLib();
@@ -284,13 +290,14 @@ async function saveCurrentPlan(){
   renderSongs(); renderPlaylist();
 }
 function resetPlan(){
+  discardAllMarks();
   data.members=Array.from({length:7},(_,i)=>({name:`成員 ${i+1}`,img:null,color:PALETTE[i%14]}));
   data.segments=[]; data.formations=[]; data.order=[]; fixOrder(data);
   data.theme={bg:'#1b1d22',img:null};
   currentSongId=null; plPos=null; curBlob=null;
   media.pause(); media.removeAttribute('src'); media.load();
   mediaReady=false; playBtn.disabled=true; seek.disabled=true; seek.value=0;
-  document.getElementById('markBtn').disabled=true;
+  renderMarkButtons();
   playBtn.textContent='播放';
   document.getElementById('dur').textContent='/ 00:00';
   document.getElementById('fileHint').textContent='新方案已建立,請選擇音樂/影片檔。';
@@ -349,7 +356,7 @@ themeOverlay.addEventListener('click',e=>{ if(e.target===themeOverlay) themeOver
 
 /* ================= init ================= */
 function renderAll(){
-  renderMembers(); renderBars(); renderQuickSelect(); renderSegs();
+  renderMembers(); renderBars(); renderMarkButtons(); renderSegs();
   renderStage(); renderTopview(); renderForm(); renderTicks();
   updateSelVisual();
 }

@@ -6,10 +6,12 @@ const seek=document.getElementById('seek');
 let mediaReady=false, mediaUrl=null, curBlob=null, curName='', pendingAutoplay=false;
 
 function setMediaBlob(blob, name, autoplay){
+  stopAllMarks(nowT());
   curBlob=blob; curName=name||'';
   if(mediaUrl) URL.revokeObjectURL(mediaUrl);
   mediaUrl=URL.createObjectURL(blob);
   mediaReady=false; pendingAutoplay=!!autoplay;
+  renderMarkButtons();
   media.src=mediaUrl;
   media.classList.toggle('show', (blob.type||'').startsWith('video'));
   document.getElementById('fileHint').textContent=`已載入:${name}`;
@@ -22,7 +24,7 @@ media.addEventListener('loadedmetadata',()=>{
   mediaReady=true;
   playBtn.disabled=false; seek.disabled=false;
   media.playbackRate=+document.getElementById('rateSel').value;
-  document.getElementById('markBtn').disabled=false;
+  renderMarkButtons();
   seek.max=media.duration;
   document.getElementById('dur').textContent='/ '+fmtD(media.duration);
   renderTicks();
@@ -53,6 +55,7 @@ document.querySelectorAll('[data-skip]').forEach(b=> b.onclick=()=>{
 /* 播完的行為:由播放清單模式決定 */
 let plPos=null;   // 目前在清單中的位置(null=不在清單播放)
 media.addEventListener('ended', ()=>{
+  stopAllMarks(media.duration);
   const mode=lib.playlist.mode;
   if(mode==='single-loop'){ media.currentTime=0; media.play(); return; }
   if(mode==='single-stop' || plPos==null || !lib.playlist.ids.length){

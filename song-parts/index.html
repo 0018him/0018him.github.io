@@ -6,7 +6,7 @@
 <title>歌唱分配計時</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@300;500&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="song-parts.css?v=20261107c">
+<link rel="stylesheet" href="song-parts.css?v=20261116a">
 </head>
 <body>
 <div id="bgLayer" aria-hidden="true"><div class="bgblur"></div><div class="bgfit"></div></div>
@@ -43,10 +43,12 @@
     </div>
     <input type="range" class="seek" id="seek" min="0" max="100" step="0.1" value="0" disabled>
     <div class="ticks" id="ticks"></div>
-    <div class="row">
-      <select id="quickMember"></select>
-      <button class="btn" id="markBtn" disabled>▶ 由此刻開始標記</button>
-      <span class="filehint" id="markState"></span>
+    <div class="mark-panel">
+      <div class="mark-header">
+        <span class="filehint">點擊成員開始標記，再點一次暫停</span>
+        <span class="filehint" id="markState" aria-live="polite"></span>
+      </div>
+      <div class="mark-grid" id="markButtons" aria-label="各成員的演唱標記按鈕"></div>
     </div>
     <div class="filehint" id="fileHint">支援 mp3 / m4a 音檔及 mp4 影片</div>
   </div>
@@ -108,7 +110,7 @@
         <button class="tbtn" id="scApply">套用</button>
       </div>
       <div class="hint">
-        標記按鈕在上方播放器內:選擇成員後按「由此刻開始標記」,唱完再按一次結束。<br>
+        在上方播放器按成員方形按鈕開始標記,再按一次暫停;多人可同時標記。按鈕與下方頭像由左至右對應。<br>
         亦可在表格直接輸入時間(格式 分:秒.一位小數,如 1:23.5),或按「取now」抓當前播放位置。
       </div>
       </div>
@@ -171,7 +173,7 @@
       <button class="btn" id="importBtn">匯入備份</button>
     </div>
     <div id="songList"></div>
-    <div class="hint">儲存內容:兩頁標註+成員設定+<b>音檔(存於此裝置)</b>。匯出備份為 JSON 檔,<b>不含音檔</b>,可轉移到其他裝置後重選音檔。<br><span class="mono" style="opacity:.6">版本 20261107c</span></div>
+    <div class="hint">儲存內容:兩頁標註+成員設定+<b>音檔(存於此裝置)</b>。匯出備份為 JSON 檔,<b>不含音檔</b>,可轉移到其他裝置後重選音檔。<br><span class="mono" style="opacity:.6">版本 20261116a</span></div>
   </div>
 </div>
 
@@ -234,9 +236,9 @@
   </div>
 </div>
 
-<script src="sp-core.js?v=20261107c"></script>
-<script src="sp-media.js?v=20261107c"></script>
-<script src="sp-ui.js?v=20261107c"></script>
-<script src="sp-features.js?v=20261107c"></script>
+<script src="sp-core.js?v=20261116a"></script>
+<script src="sp-media.js?v=20261116a"></script>
+<script src="sp-ui.js?v=20261116a"></script>
+<script src="sp-features.js?v=20261116a"></script>
 </body>
 </html>
